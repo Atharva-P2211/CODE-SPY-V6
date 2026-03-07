@@ -1,0 +1,4032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>CodeSPY — AI Among Coders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;1,300&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   CodeSPY — MASTER STYLESHEET
+   Dark social-deduction game UI. Every phase is cinematic.
+   4 difficulty tiers each with their own color personality.
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --bg:    #060912;
+  --bg1:   #090d1a;
+  --bg2:   #0d1326;
+  --bg3:   #121b35;
+  --card:  rgba(12,18,38,0.95);
+  --glass: rgba(9,13,26,0.7);
+
+  /* Tier colors */
+  --rookie:     #39ff8a;
+  --apprentice: #00cfff;
+  --agent:      #ffc940;
+  --elite:      #ff3b5c;
+
+  /* Core palette */
+  --red:  #ff3b5c;
+  --grn:  #39ff8a;
+  --cyn:  #00cfff;
+  --gld:  #ffc940;
+  --purp: #b060ff;
+  --redg: rgba(255,59,92,0.18);
+  --grng: rgba(57,255,138,0.14);
+  --cyng: rgba(0,207,255,0.13);
+  --gldg: rgba(255,201,64,0.14);
+
+  --txt:  #e8eeff;
+  --txt2: rgba(232,238,255,0.52);
+  --txt3: rgba(232,238,255,0.22);
+  --bdr:  rgba(255,255,255,0.07);
+  --bdr2: rgba(255,255,255,0.13);
+
+  --ff: 'Rajdhani', sans-serif;
+  --fm: 'JetBrains Mono', monospace;
+  --fb: 'Bebas Neue', sans-serif;
+
+  --t:  0.2s cubic-bezier(.4,0,.2,1);
+  --ts: 0.38s cubic-bezier(.4,0,.2,1);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ── RESET ── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0 }
+html { height: 100% }
+body {
+  font-family: var(--ff);
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: rgba(255,59,92,.3); color: #fff }
+::-webkit-scrollbar { width: 3px }
+::-webkit-scrollbar-thumb { background: var(--bdr2); border-radius: 2px }
+
+/* ── BACKGROUND ── */
+#bg-dots {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+  animation: dotDrift 50s linear infinite;
+}
+@keyframes dotDrift { to { background-position: 26px 26px } }
+
+#bg-vig {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse 70% 65% at 50% 50%, transparent 25%, rgba(6,9,18,.85) 100%);
+}
+#scanlines {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: .022;
+  background: repeating-linear-gradient(0deg, #000 0, #000 1px, transparent 1px, transparent 3px);
+}
+
+/* ── CONFETTI ── */
+#confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 9998 }
+@keyframes cfFall { to { transform: translateY(110vh) rotate(720deg) translateX(20px); opacity: 0 } }
+
+/* ── APP ── */
+#app { position: relative; z-index: 10; min-height: 100vh }
+
+/* ── SCREENS ── */
+.screen {
+  display: none; min-height: 100vh;
+  flex-direction: column; align-items: center; justify-content: center;
+}
+.screen.active { display: flex; animation: scrIn .38s var(--ts) both }
+@keyframes scrIn { from { opacity:0; transform:scale(.975) translateY(10px) } to { opacity:1; transform:none } }
+
+/* ── PHASE CINEMATIC ── */
+#phase-flash {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0; background: var(--bg);
+}
+#phase-flash.show { animation: pfReveal 1.9s ease forwards }
+.pf-icon { font-size: 72px; margin-bottom: 14px; animation: pfPulse .55s ease infinite alternate }
+.pf-title {
+  font-family: var(--fb); font-size: clamp(52px,10vw,100px);
+  letter-spacing: 4px; text-align: center; line-height: 1;
+}
+.pf-sub { font-family: var(--fm); font-size: 13px; color: var(--txt2); margin-top: 12px; letter-spacing: 2px }
+@keyframes pfReveal { 0%{opacity:0} 8%{opacity:1} 68%{opacity:1} 100%{opacity:0} }
+@keyframes pfPulse { from{transform:scale(1)} to{transform:scale(1.1)} }
+
+/* ── TOASTS ── */
+#toasts {
+  position: fixed; bottom: 18px; right: 18px; z-index: 8000;
+  display: flex; flex-direction: column-reverse; gap: 7px;
+  pointer-events: none; max-width: 270px;
+}
+.toast {
+  font-family: var(--fm); font-size: 11px; font-weight: 600;
+  padding: 9px 13px 9px 11px; border-radius: 6px; border-left: 3px solid;
+  animation: tPop .22s var(--spring); backdrop-filter: blur(20px); line-height: 1.5;
+}
+.ti { background:rgba(0,207,255,.09); border-color:var(--cyn); color:var(--cyn) }
+.ts { background:rgba(57,255,138,.09); border-color:var(--grn); color:var(--grn) }
+.tw { background:rgba(255,201,64,.09); border-color:var(--gld); color:var(--gld) }
+.te { background:rgba(255,59,92,.09); border-color:var(--red); color:var(--red) }
+@keyframes tPop { from{transform:translateX(14px) scale(.92);opacity:0} to{transform:none;opacity:1} }
+
+/* ── SOUND TOGGLE ── */
+#sound-btn {
+  position: fixed; top: 16px; right: 16px; z-index: 9000;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(255,255,255,.06); border: 1px solid var(--bdr2);
+  color: var(--txt2); cursor: pointer; transition: all var(--t);
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+#sound-btn:hover { background: rgba(255,255,255,.12); color: var(--txt) }
+
+/* ── LIVE DOT ── */
+.live-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--grn); flex-shrink: 0;
+  animation: ldPulse 1.6s ease-in-out infinite;
+}
+@keyframes ldPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(57,255,138,.65) }
+  50%      { box-shadow: 0 0 0 5px rgba(57,255,138,0) }
+}
+
+/* ════════════════════════════════════════
+   HOME SCREEN
+════════════════════════════════════════ */
+#s-home { padding: 24px; background: var(--bg) }
+.home-wrap {
+  display: grid; grid-template-columns: 1fr 400px; gap: 52px;
+  align-items: center; max-width: 1060px; width: 100%; padding: 0 16px;
+}
+
+.home-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--fm); font-size: 10px; font-weight: 600; letter-spacing: 2px;
+  color: var(--gld); border: 1px solid rgba(255,201,64,.3);
+  padding: 5px 12px; border-radius: 4px; background: var(--gldg); margin-bottom: 26px;
+}
+.hero-word { font-family: var(--fb); line-height: .9; letter-spacing: 2px; display: block }
+.hw1 { font-size: clamp(60px,9vw,108px); color: var(--txt) }
+.hw2 {
+  font-size: clamp(60px,9vw,108px); color: var(--red);
+  text-shadow: 0 0 40px rgba(255,59,92,.55), 0 0 80px rgba(255,59,92,.18); position: relative;
+}
+.hw2::after { content:'SPY'; position:absolute; left:3px; top:3px; color:rgba(0,207,255,.22); z-index:-1 }
+.hero-sub { font-family:var(--fm); font-size:10px; font-weight:700; letter-spacing:4px; color:var(--red); margin:14px 0 18px }
+.hero-desc { font-size:16px; font-weight:400; color:var(--txt2); line-height:1.78; max-width:440px; margin-bottom:34px }
+.home-actions { display:flex; flex-direction:column; gap:11px; max-width:310px }
+
+.btn-main {
+  display: flex; align-items: center; gap: 11px;
+  font-family: var(--ff); font-size: 16px; font-weight: 700; letter-spacing: .5px;
+  padding: 15px 22px; border-radius: 8px; border: none; cursor: pointer; transition: all var(--t);
+}
+.btn-main svg { width: 17px; height: 17px; flex-shrink: 0 }
+.bm-red {
+  background: var(--red); color: #fff;
+  box-shadow: 0 0 22px rgba(255,59,92,.45), 0 4px 18px rgba(0,0,0,.5);
+}
+.bm-red:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 42px rgba(255,59,92,.7), 0 0 90px rgba(255,59,92,.15), 0 8px 28px rgba(0,0,0,.5);
+}
+.bm-outline {
+  background: transparent; color: var(--txt); border: 1.5px solid var(--bdr2);
+}
+.bm-outline:hover { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.28); transform: translateY(-1px) }
+.btn-ghost-sm {
+  background: none; border: none; color: var(--txt2); cursor: pointer;
+  font-family: var(--ff); font-size: 13px; font-weight: 600; letter-spacing: .8px;
+  display: flex; align-items: center; gap: 6px; padding: 8px 0; transition: color var(--t);
+}
+.btn-ghost-sm:hover { color: var(--txt) }
+.btn-ghost-sm svg { width: 15px; height: 15px }
+
+.home-stats { display:flex; gap:26px; margin-top:30px; padding-top:26px; border-top:1px solid var(--bdr) }
+.stat { text-align: center }
+.stat-n { font-family:var(--fb); font-size:28px; color:var(--red); display:block }
+.stat-l { font-family:var(--fm); font-size:9px; color:var(--txt3); letter-spacing:2px; margin-top:2px }
+
+/* Preview card */
+.prev-card {
+  background: var(--card); border: 1px solid var(--bdr2); border-radius: 13px;
+  overflow: hidden; box-shadow: 0 0 60px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.06);
+  animation: cardFloat 6s ease-in-out infinite;
+}
+@keyframes cardFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+.pc-hdr {
+  background: rgba(0,0,0,.35); padding: 11px 15px;
+  display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--bdr);
+}
+.pc-dots { display:flex; gap:5px }
+.pcd { width:10px; height:10px; border-radius:50% }
+.pcdr{background:#ff5f57} .pcdy{background:#febc2e} .pcdg{background:#28c840}
+.pc-lbl { font-family:var(--fm); font-size:9px; color:var(--txt3); letter-spacing:1px }
+.pc-live { display:flex; align-items:center; gap:5px; font-family:var(--fm); font-size:9px; color:var(--grn) }
+.pc-phase-bar {
+  padding: 7px 15px; background: linear-gradient(90deg, rgba(255,59,92,.13) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(255,59,92,.18); display: flex; align-items: center; justify-content: space-between;
+}
+.pc-phase-lbl { font-family:var(--fm); font-size:9px; font-weight:700; color:var(--red); letter-spacing:2px }
+.pc-timer { font-family:var(--fb); font-size:22px; color:var(--gld) }
+.pc-code-block {
+  font-family: var(--fm); font-size: 10px; line-height: 1.7; padding: 12px 15px;
+  background: rgba(0,0,0,.22); border-bottom: 1px solid var(--bdr); white-space: pre; color: rgba(232,238,255,.68);
+}
+.ck{color:#c792ea} .cf{color:var(--cyn)} .co{color:rgba(232,238,255,.3);font-style:italic}
+.pc-players-list { padding:11px 15px; display:flex; flex-direction:column; gap:7px }
+.pc-player { display:flex; align-items:center; gap:9px }
+.pc-av { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0 }
+.pc-av-h { background:rgba(57,255,138,.1); border:1.5px solid rgba(57,255,138,.35) }
+.pc-av-a { background:rgba(255,59,92,.1); border:1.5px solid rgba(255,59,92,.35) }
+.pc-bar-w { flex:1; height:4px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden }
+.pc-bar { height:100%; border-radius:2px }
+.pc-bar-h { background:linear-gradient(90deg, var(--grn), rgba(57,255,138,.4)) }
+.pc-bar-a { background:linear-gradient(90deg, var(--red), rgba(255,59,92,.4)) }
+.pc-pts { font-family:var(--fm); font-size:10px; min-width:36px; text-align:right }
+.pc-pts-h{color:var(--grn)} .pc-pts-a{color:var(--red)}
+.pc-footer {
+  padding: 9px 15px; background: rgba(0,0,0,.25); border-top: 1px solid var(--bdr);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pc-subm { font-family:var(--fm); font-size:9px; color:var(--txt3); letter-spacing:1px }
+.pc-vbar { display:flex; gap:3px }
+.pvb { width:13px; height:4px; border-radius:2px; background:rgba(255,255,255,.09) }
+.pvb.c { background:var(--red) }
+
+/* ════════════════════════════════════════
+   DIFFICULTY SELECTION
+════════════════════════════════════════ */
+#s-difficulty {
+  padding: 24px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,59,92,.06) 0%, var(--bg) 60%);
+}
+.diff-shell { max-width: 700px; width: 100%; padding: 0 16px }
+.diff-header { text-align: center; margin-bottom: 36px }
+.diff-title { font-family:var(--fb); font-size:clamp(32px,6vw,52px); letter-spacing:3px; margin-bottom:8px }
+.diff-subtitle { font-family:var(--fm); font-size:11px; color:var(--txt3); letter-spacing:2px }
+
+.tier-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:24px }
+
+.tier-card {
+  background: var(--card); border: 1.5px solid var(--bdr);
+  border-radius: 14px; padding: 24px 20px; cursor: pointer;
+  transition: all var(--ts); position: relative; overflow: hidden;
+}
+.tier-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--tc, #fff); opacity: 0; transition: opacity var(--t);
+}
+.tier-card:hover { transform: translateY(-4px) scale(1.02) }
+.tier-card:hover::before { opacity: 1 }
+.tier-card:hover .tier-glow { opacity: 0.15 }
+.tier-card.selected { border-color: var(--tc, #fff) }
+.tier-card.selected::before { opacity: 1 }
+
+.tier-glow {
+  position: absolute; inset: 0; opacity: 0; transition: opacity var(--t);
+  background: radial-gradient(ellipse at 50% 0%, var(--tc, transparent) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.tier-card.t-rookie   { --tc: var(--rookie) }
+.tier-card.t-apprentice { --tc: var(--apprentice) }
+.tier-card.t-agent    { --tc: var(--agent) }
+.tier-card.t-elite    { --tc: var(--elite) }
+
+.tier-card.t-rookie:hover   { box-shadow: 0 8px 40px rgba(57,255,138,.2) }
+.tier-card.t-apprentice:hover { box-shadow: 0 8px 40px rgba(0,207,255,.2) }
+.tier-card.t-agent:hover    { box-shadow: 0 8px 40px rgba(255,201,64,.2) }
+.tier-card.t-elite:hover    { box-shadow: 0 8px 40px rgba(255,59,92,.3) }
+
+.tier-icon { font-size: 36px; display: block; margin-bottom: 12px }
+.tier-name {
+  font-family: var(--fb); font-size: 22px; letter-spacing: 2px;
+  color: var(--tc); display: block; margin-bottom: 6px;
+  text-shadow: 0 0 20px var(--tc);
+}
+.tier-desc { font-family:var(--fm); font-size:10px; color:var(--txt2); line-height:1.6; margin-bottom:12px }
+.tier-meta { display:flex; gap:10px; flex-wrap:wrap }
+.tier-pill {
+  font-family: var(--fm); font-size: 9px; letter-spacing: 1px;
+  padding: 3px 9px; border-radius: 99px; border: 1px solid;
+  border-color: rgba(255,255,255,.15); color: var(--txt3);
+}
+
+/* ════════════════════════════════════════
+   MODAL SCREENS
+════════════════════════════════════════ */
+#s-create,#s-join,#s-howto {
+  padding: 20px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,59,92,.05) 0%, var(--bg) 58%);
+}
+.mbox {
+  background: var(--card); border: 1px solid var(--bdr2); border-radius: 15px;
+  padding: 34px 38px; max-width: 430px; width: 100%;
+  box-shadow: 0 20px 80px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.05);
+  position: relative; overflow: hidden;
+}
+.mbox::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+}
+.back-btn {
+  position: absolute; top: 16px; left: 18px;
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--fm); font-size: 10px; color: var(--txt3); letter-spacing: 1px;
+  background: none; border: none; cursor: pointer; transition: color var(--t);
+}
+.back-btn:hover { color: var(--txt) }
+.back-btn svg { width: 13px; height: 13px }
+.m-icon { font-size: 38px; display: block; margin-bottom: 14px }
+.m-title { font-family:var(--fb); font-size:30px; letter-spacing:2px; color:var(--txt); margin-bottom:6px }
+.m-desc { font-size:14px; color:var(--txt2); margin-bottom:26px; line-height:1.65 }
+
+/* Form fields */
+.fld { margin-bottom: 17px }
+.fld-lbl {
+  display: block; font-family: var(--fm); font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; color: var(--txt3); margin-bottom: 7px; text-transform: uppercase;
+}
+.fld-inp {
+  width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--bdr2);
+  border-radius: 7px; padding: 12px 15px; color: var(--txt);
+  font-family: var(--ff); font-size: 15px; font-weight: 600;
+  outline: none; transition: all var(--t);
+}
+.fld-inp::placeholder { color: var(--txt3); font-weight: 400 }
+.fld-inp:focus {
+  border-color: var(--red); background: rgba(255,59,92,.05);
+  box-shadow: 0 0 0 3px rgba(255,59,92,.11);
+}
+.fld-inp.code-inp {
+  font-family: var(--fb); font-size: 28px; letter-spacing: 13px;
+  text-align: center; color: var(--red); text-shadow: 0 0 18px rgba(255,59,92,.4);
+}
+.fld-err {
+  font-family: var(--fm); font-size: 10px; color: var(--red);
+  background: rgba(255,59,92,.08); border: 1px solid rgba(255,59,92,.28);
+  border-radius: 5px; padding: 7px 11px; margin-bottom: 13px;
+}
+
+/* Code reveal */
+.code-reveal { margin-top: 22px; text-align: center }
+.cr-lbl { font-family:var(--fm); font-size:9px; color:var(--txt3); letter-spacing:3px; margin-bottom:9px }
+.cr-row {
+  display: flex; align-items: center; justify-content: center; gap: 11px;
+  background: rgba(255,59,92,.06); border: 1.5px solid rgba(255,59,92,.38);
+  border-radius: 9px; padding: 15px 18px;
+  box-shadow: inset 0 0 28px rgba(255,59,92,.08); margin-bottom: 9px;
+}
+.cr-code {
+  font-family: var(--fb); font-size: 32px; letter-spacing: 11px;
+  color: var(--red); text-shadow: 0 0 22px rgba(255,59,92,.5);
+}
+.cr-hint { font-family:var(--fm); font-size:10px; color:var(--txt3); margin-bottom:16px }
+
+/* Buttons */
+.btn-act {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  width: 100%; font-family: var(--ff); font-size: 15px; font-weight: 700; letter-spacing: .5px;
+  padding: 13px 22px; border-radius: 7px; border: none; cursor: pointer; transition: all var(--t);
+}
+.btn-act svg { width: 16px; height: 16px; flex-shrink: 0 }
+.ba-red { background:var(--red); color:#fff; box-shadow:0 0 18px rgba(255,59,92,.38),0 4px 14px rgba(0,0,0,.4) }
+.ba-red:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 0 36px rgba(255,59,92,.62),0 8px 22px rgba(0,0,0,.4) }
+.ba-out { background:transparent; color:var(--txt); border:1.5px solid var(--bdr2); margin-top:9px }
+.ba-out:hover:not(:disabled) { background:rgba(255,255,255,.05) }
+.ba-danger { background:transparent; color:var(--red); border:1.5px solid rgba(255,59,92,.32); margin-top:9px }
+.ba-danger:hover:not(:disabled) { background:var(--redg) }
+.btn-act:disabled { opacity:.28; cursor:not-allowed; transform:none!important; box-shadow:none!important }
+
+.copy-btn {
+  width: 34px; height: 34px; border-radius: 6px;
+  background: rgba(255,59,92,.11); border: 1px solid rgba(255,59,92,.28);
+  color: var(--red); cursor: pointer; transition: all var(--t);
+  display: flex; align-items: center; justify-content: center;
+}
+.copy-btn:hover { background: rgba(255,59,92,.24) }
+.copy-btn svg { width: 14px; height: 14px }
+
+/* How to play */
+.hbox {
+  background: var(--card); border: 1px solid var(--bdr2); border-radius: 15px;
+  padding: 34px 42px; max-width: 580px; width: 100%;
+  box-shadow: 0 20px 80px rgba(0,0,0,.7); position: relative; overflow: hidden;
+}
+.hbox::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+}
+.h-title { font-family:var(--fb); font-size:26px; letter-spacing:2px; margin-bottom:24px }
+.step { display:flex; gap:14px; align-items:flex-start; padding:14px 0; border-bottom:1px solid var(--bdr) }
+.step:last-child { border: none }
+.step-n {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--redg); border: 1.5px solid rgba(255,59,92,.38);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fb); font-size: 14px; color: var(--red);
+}
+.step-ico { font-size:20px; flex-shrink:0; margin-top:3px }
+.step-body h3 { font-size:15px; font-weight:700; margin-bottom:4px }
+.step-body p { font-size:13px; color:var(--txt2); line-height:1.65 }
+
+/* ════════════════════════════════════════
+   LOBBY
+════════════════════════════════════════ */
+#s-lobby {
+  padding: 0; align-items: stretch; justify-content: stretch;
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255,59,92,.05) 0%, var(--bg) 58%);
+}
+.lobby-shell {
+  display: grid; grid-template-rows: auto 1fr auto;
+  min-height: 100vh; width: 100%; max-width: 880px; margin: 0 auto; padding: 0 22px;
+}
+.lobby-hdr {
+  padding: 26px 0 18px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--bdr);
+}
+.room-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--bdr2); border-radius: 7px; padding: 8px 13px;
+}
+.rc-lbl { font-family:var(--fm); font-size:9px; letter-spacing:2px; color:var(--txt3) }
+.rc-code {
+  font-family: var(--fb); font-size: 19px; letter-spacing: 4px;
+  color: var(--red); text-shadow: 0 0 14px rgba(255,59,92,.38);
+}
+.rnd-badge {
+  font-family: var(--fm); font-size: 10px; color: var(--txt2); letter-spacing: 1px;
+  background: var(--bg3); border: 1px solid var(--bdr); border-radius: 5px; padding: 5px 11px;
+}
+.lobby-body { padding: 22px 0; overflow-y: auto }
+.lobby-heading { text-align:center; padding:14px 0 16px }
+.lobby-main-t { font-family:var(--fb); font-size:clamp(26px,5vw,40px); letter-spacing:2px }
+.lobby-sub-t { font-family:var(--fm); font-size:11px; color:var(--txt3); letter-spacing:2px; margin-top:5px }
+.lobby-tier-info {
+  font-family: var(--fm); font-size: 11px; color: var(--txt2);
+  text-align: center; margin: 8px 0 20px;
+}
+.players-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:13px }
+.ph-lbl { font-family:var(--fm); font-size:10px; letter-spacing:2px; color:var(--txt3) }
+.ph-count {
+  font-family: var(--fm); font-size: 10px; color: var(--grn);
+  background: var(--grng); border: 1px solid rgba(57,255,138,.2); padding: 3px 9px; border-radius: 99px;
+}
+
+.players-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(115px,1fr)); gap:9px }
+.p-card {
+  background: var(--card); border: 1px solid var(--bdr); border-radius: 9px;
+  padding: 13px 9px; text-align: center; transition: all var(--t);
+  animation: pCardIn .32s var(--spring) both;
+}
+.p-card:hover { border-color:var(--bdr2); transform:translateY(-2px) }
+.p-card.is-host { border-color:rgba(255,201,64,.32); background:rgba(255,201,64,.04) }
+.p-card.is-me { border-color:rgba(57,255,138,.32); background:rgba(57,255,138,.04) }
+@keyframes pCardIn { from{transform:scale(.65) translateY(8px);opacity:0} to{transform:none;opacity:1} }
+.p-av { font-size:26px; display:block; margin-bottom:7px }
+.p-name { font-family:var(--fm); font-size:9px; font-weight:700; color:var(--txt); word-break:break-all; line-height:1.4 }
+.p-role { font-family:var(--fm); font-size:8px; display:block; margin-top:3px }
+.p-role.host { color:var(--gld) }
+.p-role.me   { color:var(--grn) }
+.p-score { font-family:var(--fb); font-size:13px; color:var(--txt2); margin-top:3px; display:block }
+
+.lobby-footer {
+  padding: 18px 0; border-top: 1px solid var(--bdr);
+  display: flex; align-items: center; gap: 12px;
+}
+.lobby-hint { font-family:var(--fm); font-size:11px; color:var(--txt3); flex:1; letter-spacing:.4px }
+.lbtn {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--ff); font-size: 14px; font-weight: 700; letter-spacing: .4px;
+  padding: 11px 20px; border-radius: 7px; border: none; cursor: pointer; transition: all var(--t);
+}
+.lbtn svg { width: 15px; height: 15px; flex-shrink: 0 }
+.lbtn-start { background:var(--red); color:#fff; box-shadow:0 0 16px rgba(255,59,92,.38) }
+.lbtn-start:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 0 30px rgba(255,59,92,.62) }
+.lbtn-start:disabled { opacity:.28; cursor:not-allowed; transform:none; box-shadow:none }
+.lbtn-leave { background:transparent; color:var(--txt2); border:1px solid var(--bdr) }
+.lbtn-leave:hover { color:var(--txt); border-color:var(--bdr2) }
+
+/* ════════════════════════════════════════
+   CODING SCREEN
+════════════════════════════════════════ */
+#s-coding { padding:0; align-items:stretch; background:var(--bg1); min-height:100vh }
+.coding-shell {
+  display: flex; flex-direction: column; height: 100vh;
+  max-width: 1400px; width: 100%; margin: 0 auto; padding: 0 10px 10px;
+}
+
+/* Topbar */
+.ctb {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px; gap: 10px; flex-shrink: 0;
+}
+.ctb-l,.ctb-r { display:flex; align-items:center; gap:10px }
+.phase-chip {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--fm); font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  padding: 5px 11px; border-radius: 99px;
+}
+.pc-code   { background:rgba(0,207,255,.09);  border:1px solid rgba(0,207,255,.28);  color:var(--cyn) }
+.pc-spy    { background:var(--redg);          border:1px solid rgba(255,59,92,.38);  color:var(--red) }
+.pc-result { background:var(--gldg);          border:1px solid rgba(255,201,64,.32); color:var(--gld) }
+.phase-dot { width:5px; height:5px; border-radius:50%; background:currentColor; animation:ldPulse 1.5s ease-in-out infinite }
+.rnd-lbl { font-family:var(--fm); font-size:9px; color:var(--txt3); letter-spacing:1px }
+.sub-pill {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--fm); font-size: 10px; color: var(--txt2);
+  background: rgba(255,255,255,.04); border: 1px solid var(--bdr);
+  padding: 4px 11px; border-radius: 99px;
+}
+.sub-pill svg { width:11px; height:11px; color:var(--grn) }
+
+/* Timer ring */
+.timer-wrap { position:relative; width:56px; height:56px; flex-shrink:0 }
+.timer-wrap.timer-warn  { filter: drop-shadow(0 0 6px rgba(255,201,64,.5)) }
+.timer-wrap.timer-urgent { filter: drop-shadow(0 0 10px rgba(255,59,92,.7)); animation: urgentShake .3s ease infinite }
+@keyframes urgentShake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-2deg)} 75%{transform:rotate(2deg)} }
+.timer-svg { position:absolute; inset:0; transform:rotate(-90deg) }
+.tr-bg { stroke:rgba(255,255,255,.06) }
+.tr-fg { stroke:var(--cyn); stroke-linecap:round; transition:stroke-dashoffset 1s linear,stroke .5s; filter:drop-shadow(0 0 3px currentColor) }
+.tr-fg.warn    { stroke:var(--gld) }
+.tr-fg.danger  { stroke:var(--red); animation:trBlink .5s ease infinite }
+@keyframes trBlink { 50%{opacity:.35} }
+.timer-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--fb); font-size:14px; letter-spacing:1px }
+.tn-ok     { color:var(--txt) }
+.tn-warn   { color:var(--gld) }
+.tn-danger { color:var(--red) }
+
+/* Coding body */
+.coding-body { display:grid; grid-template-columns:355px 1fr; gap:9px; flex:1; min-height:0 }
+
+/* Challenge pane */
+.ch-pane { background:var(--card); border:1px solid var(--bdr); border-radius:11px; display:flex; flex-direction:column; overflow:hidden }
+.ch-pane-hdr { padding:13px 16px; background:rgba(0,0,0,.25); border-bottom:1px solid var(--bdr); display:flex; align-items:center; gap:9px; flex-shrink:0 }
+.diff-badge {
+  font-family: var(--fm); font-size: 8px; font-weight: 700; letter-spacing: 1px;
+  padding: 3px 8px; border-radius: 4px;
+  background: color-mix(in srgb, var(--tier-color, #fff) 15%, transparent);
+  color: var(--tier-color, #fff);
+  border: 1px solid color-mix(in srgb, var(--tier-color, #fff) 30%, transparent);
+}
+/* Fallback tier colors for diff-badge */
+.d-rookie     { --tier-color: var(--rookie) }
+.d-apprentice { --tier-color: var(--apprentice) }
+.d-agent      { --tier-color: var(--agent) }
+.d-elite      { --tier-color: var(--elite) }
+
+.ch-title { font-family:var(--ff); font-size:15px; font-weight:700 }
+.ch-body { padding:15px 16px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:12px }
+.ch-desc { font-size:13px; color:var(--txt2); line-height:1.8 }
+.ch-task-block {
+  background: rgba(255,201,64,.06); border: 1px solid rgba(255,201,64,.2);
+  border-radius: 7px; padding: 10px 13px;
+}
+.ch-task-lbl { font-family:var(--fm); font-size:8px; font-weight:700; letter-spacing:2px; color:var(--gld); display:block; margin-bottom:5px }
+.ch-task-txt { font-size:12px; color:var(--txt2); line-height:1.6 }
+.io-block { background:rgba(0,0,0,.22); border-radius:7px; padding:10px 13px; border:1px solid var(--bdr) }
+.io-tag { font-family:var(--fm); font-size:8px; font-weight:700; letter-spacing:2px; display:block; margin-bottom:5px }
+.io-in{color:var(--cyn)} .io-out{color:var(--grn)}
+.io-val { font-family:var(--fm); font-size:11px; color:var(--txt); white-space:pre-wrap; line-height:1.6 }
+.ch-hint {
+  background:rgba(176,96,255,.07); border:1px solid rgba(176,96,255,.2);
+  border-radius:7px; padding:9px 13px; display:flex; gap:8px; align-items:flex-start;
+}
+.ch-hint-ico { font-size:14px; flex-shrink:0 }
+.ch-hint-txt { font-family:var(--fm); font-size:10px; color:rgba(176,96,255,.9); line-height:1.65 }
+.ch-agents { display:flex; align-items:center; gap:7px; margin-top:auto; padding-top:11px; border-top:1px solid var(--bdr) }
+.ch-ags-lbl { font-family:var(--fm); font-size:9px; color:var(--txt3); letter-spacing:1px }
+.ch-av-list { display:flex; gap:3px; flex-wrap:wrap }
+.ch-av {
+  width:26px; height:26px; border-radius:50%;
+  border: 1.5px solid rgba(57,255,138,.28); background: rgba(57,255,138,.07);
+  display:flex; align-items:center; justify-content:center; font-size:13px;
+}
+
+/* Editor pane */
+.ed-pane { background:#0d1117; border:1px solid var(--bdr); border-radius:11px; display:flex; flex-direction:column; overflow:hidden }
+.ed-bar { display:flex; align-items:center; gap:9px; padding:9px 14px; background:rgba(0,0,0,.42); border-bottom:1px solid rgba(255,255,255,.04); flex-shrink:0 }
+.ed-dots { display:flex; gap:5px }
+.ed-dot { width:10px; height:10px; border-radius:50% }
+.edr{background:#ff5f57} .edy{background:#febc2e} .edg{background:#28c840}
+.ed-fname { font-family:var(--fm); font-size:11px; color:rgba(255,255,255,.28); flex:1; text-align:center }
+.ed-st { font-family:var(--fm); font-size:9px; letter-spacing:1px }
+.ed-st-ready  { color:var(--txt3) }
+.ed-st-typing { color:var(--cyn) }
+.ed-st-done   { color:var(--grn) }
+.ed-body { display:flex; flex:1; min-height:0; overflow:hidden }
+.ed-lines {
+  font-family:var(--fm); font-size:12px; line-height:1.65; color:rgba(255,255,255,.16);
+  text-align:right; padding:15px 9px 15px 11px; min-width:36px; user-select:none;
+  border-right:1px solid rgba(255,255,255,.04); white-space:pre; overflow:hidden;
+}
+.ed-ta {
+  flex:1; resize:none; border:none; outline:none; background:transparent; color:var(--txt);
+  font-family:var(--fm); font-size:12.5px; line-height:1.65;
+  padding:15px 15px 15px 13px; tab-size:2; caret-color:var(--red); overflow-y:auto;
+}
+.ed-ta::placeholder { color:rgba(255,255,255,.09) }
+.ed-footer {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 14px; background:rgba(0,0,0,.32); border-top:1px solid rgba(255,255,255,.04); flex-shrink:0;
+}
+.ed-fl,.ed-fr { display:flex; align-items:center; gap:9px }
+.ed-lang { font-family:var(--fm); font-size:9px; color:var(--cyn); background:rgba(0,207,255,.09); border:1px solid rgba(0,207,255,.18); padding:2px 7px; border-radius:3px }
+.ed-lc { font-family:var(--fm); font-size:9px; color:var(--txt3) }
+.sub-done-msg { display:flex; align-items:center; gap:5px; font-family:var(--fm); font-size:10px; color:var(--grn); letter-spacing:.4px }
+.sub-done-msg svg { width:11px; height:11px }
+.btn-submit {
+  display:flex; align-items:center; gap:6px;
+  font-family:var(--ff); font-size:11px; font-weight:700; letter-spacing:.4px;
+  padding:7px 16px; border-radius:5px; border:none; cursor:pointer;
+  background:var(--red); color:#fff; box-shadow:0 0 13px rgba(255,59,92,.38);
+  transition:all var(--t);
+}
+.btn-submit:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 0 22px rgba(255,59,92,.62) }
+.btn-submit:disabled { opacity:.28; cursor:not-allowed; transform:none; box-shadow:none }
+.btn-submit svg { width:13px; height:13px }
+
+/* ════════════════════════════════════════
+   VOTING SCREEN
+════════════════════════════════════════ */
+#s-voting {
+  padding: 0; align-items: stretch;
+  background: radial-gradient(ellipse 68% 38% at 50% 0%, rgba(255,59,92,.07) 0%, var(--bg) 52%);
+}
+.voting-shell { max-width:980px; width:100%; margin:0 auto; padding:26px 22px 38px }
+.v-hdr { text-align:center; margin-bottom:26px }
+.v-title { font-family:var(--fb); font-size:clamp(30px,6vw,58px); letter-spacing:3px; margin:10px 0 7px }
+.v-sub { font-size:15px; color:var(--txt2); max-width:480px; margin:0 auto 16px }
+.spy-tips { display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-bottom:13px }
+.spy-tip {
+  font-family:var(--fm); font-size:9px; letter-spacing:1px;
+  padding:4px 11px; border-radius:99px;
+  background:var(--redg); border:1px solid rgba(255,59,92,.22); color:rgba(255,59,92,.82);
+}
+.vote-prog { font-family:var(--fm); font-size:10px; color:var(--txt3) }
+
+.subs-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(275px,1fr)); gap:13px }
+.sub-card {
+  background:var(--card); border:1.5px solid var(--bdr); border-radius:11px;
+  overflow:hidden; cursor:pointer; transition:all var(--t);
+  animation:sCardIn .38s ease-out both;
+}
+.sub-card:hover:not(.locked) { border-color:rgba(255,59,92,.38); transform:translateY(-3px); box-shadow:0 8px 30px rgba(0,0,0,.4) }
+.sub-card.selected { border-color:var(--red); box-shadow:0 0 28px rgba(255,59,92,.24) }
+.sub-card.locked { cursor:default }
+@keyframes sCardIn { from{transform:translateY(14px);opacity:0} to{transform:none;opacity:1} }
+.sub-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:9px 13px; background:rgba(0,0,0,.3); border-bottom:1px solid var(--bdr);
+}
+.sub-num { font-family:var(--fm); font-size:9px; font-weight:700; color:var(--txt2); letter-spacing:1px }
+.vote-btn {
+  font-family:var(--fm); font-size:9px; font-weight:700; letter-spacing:.4px;
+  padding:5px 11px; border-radius:4px; cursor:pointer; transition:all var(--t);
+  background:var(--redg); border:1px solid rgba(255,59,92,.38); color:var(--red);
+}
+.vote-btn:hover:not(:disabled) { background:rgba(255,59,92,.28) }
+.vote-btn:disabled { opacity:.32; cursor:not-allowed }
+.vote-btn.voted { background:var(--red); color:#fff; border-color:var(--red) }
+.sub-code-view {
+  font-family:var(--fm); font-size:10.5px; line-height:1.65;
+  padding:11px 13px; max-height:195px; overflow-y:auto;
+  white-space:pre; color:rgba(232,238,255,.68); background:rgba(0,0,0,.14);
+}
+
+/* ════════════════════════════════════════
+   RESULTS SCREEN
+════════════════════════════════════════ */
+#s-results {
+  padding: 0; align-items: stretch;
+  background: radial-gradient(ellipse 68% 38% at 50% 0%, rgba(255,201,64,.06) 0%, var(--bg) 52%);
+}
+.results-shell { max-width:980px; width:100%; margin:0 auto; padding:26px 22px 48px }
+.res-hdr { text-align:center; margin-bottom:26px }
+.res-title { font-family:var(--fb); font-size:clamp(30px,6vw,56px); letter-spacing:3px; margin:10px 0 5px }
+.res-sub { font-family:var(--fm); font-size:10px; color:var(--txt3); letter-spacing:2px }
+
+.res-body { display:grid; grid-template-columns:1fr 1.4fr; gap:14px; margin-bottom:22px }
+.panel { background:var(--card); border:1px solid var(--bdr); border-radius:11px; overflow:hidden }
+.panel-hdr { padding:11px 16px; background:rgba(0,0,0,.3); border-bottom:1px solid var(--bdr); font-family:var(--fm); font-size:9px; font-weight:700; letter-spacing:2px; color:var(--txt3) }
+.panel-body { padding:13px }
+
+.lb-row {
+  display:flex; align-items:center; gap:11px; padding:9px 11px;
+  border-radius:7px; margin-bottom:5px; border:1px solid rgba(255,255,255,.04);
+  background:rgba(255,255,255,.018); animation:sCardIn .38s ease-out both; transition:border-color var(--t);
+}
+.lb-row:hover { border-color:var(--bdr2) }
+.lb-row.r1 { border-color:rgba(255,201,64,.28); background:rgba(255,201,64,.04) }
+.lb-row.r2 { border-color:rgba(200,200,200,.18) }
+.lb-row.r3 { border-color:rgba(205,127,50,.18) }
+.lb-medal { font-size:16px; flex-shrink:0; width:24px; text-align:center }
+.lb-av { font-size:16px }
+.lb-name { font-family:var(--fm); font-size:10px; font-weight:700; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.lb-pts { font-family:var(--fb); font-size:17px; color:var(--grn) }
+.lb-res { font-size:14px }
+
+.an-card { border-radius:7px; margin-bottom:7px; overflow:hidden; border:1px solid rgba(255,255,255,.05); animation:sCardIn .45s ease-out both }
+.an-card.is-ai { border-color:rgba(255,59,92,.28) }
+.an-card.is-human { border-color:rgba(57,255,138,.18) }
+.an-hdr { display:flex; align-items:center; gap:7px; flex-wrap:wrap; padding:7px 11px; background:rgba(0,0,0,.3) }
+.an-label { font-family:var(--fm); font-size:8px; font-weight:700; letter-spacing:1px; padding:2px 9px; border-radius:3px }
+.an-label.ai { background:rgba(255,59,92,.14); color:var(--red); border:1px solid rgba(255,59,92,.28) }
+.an-label.human { background:rgba(57,255,138,.09); color:var(--grn); border:1px solid rgba(57,255,138,.22) }
+.an-votes { font-family:var(--fm); font-size:9px; color:var(--txt3); margin-left:auto }
+.an-author { font-family:var(--fm); font-size:9px; color:var(--txt2) }
+.an-code { font-family:var(--fm); font-size:10px; line-height:1.6; padding:7px 11px; max-height:95px; overflow-y:auto; white-space:pre; color:rgba(232,238,255,.52) }
+
+.res-actions { display:flex; gap:11px; justify-content:center }
+.rbtn { display:flex; align-items:center; gap:7px; font-family:var(--ff); font-size:14px; font-weight:700; letter-spacing:.4px; padding:12px 24px; border-radius:7px; border:none; cursor:pointer; transition:all var(--t) }
+.rbtn svg { width:15px; height:15px }
+.rb-red { background:var(--red); color:#fff; box-shadow:0 0 16px rgba(255,59,92,.38) }
+.rb-red:hover { transform:translateY(-2px); box-shadow:0 0 30px rgba(255,59,92,.62) }
+.rb-ghost { background:transparent; color:var(--txt2); border:1px solid var(--bdr) }
+.rb-ghost:hover { color:var(--txt); border-color:var(--bdr2) }
+
+/* ── UTILITIES ── */
+.hidden { display:none!important }
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .home-wrap{grid-template-columns:1fr;gap:26px}
+  .prev-card{display:none}
+  .coding-body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .ch-pane{max-height:260px}
+  .res-body{grid-template-columns:1fr}
+  .tier-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .mbox,.hbox{padding:22px 18px}
+  .lobby-shell,.voting-shell,.results-shell{padding:0 13px}
+  .coding-shell{padding:0 7px 7px}
+  .home-actions{max-width:100%}
+  .subs-grid{grid-template-columns:1fr}
+  .res-actions{flex-direction:column;align-items:center}
+  .lobby-footer{flex-wrap:wrap}
+  .tier-grid{grid-template-columns:1fr 1fr}
+}
+
+/* ══════════════════════════════════════════
+   CodeSPY v5 — NEW FEATURES CSS
+══════════════════════════════════════════ */
+
+/* STREAK BANNER */
+#streak-banner {
+  position:fixed; top:60px; left:50%; transform:translateX(-50%);
+  z-index:8500; pointer-events:none;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+.streak-pill {
+  font-family:var(--fb); font-size:clamp(13px,3vw,18px); letter-spacing:3px;
+  padding:7px 22px; border-radius:99px;
+  background:linear-gradient(135deg,rgba(255,201,64,.18),rgba(255,59,92,.18));
+  border:1.5px solid rgba(255,201,64,.55); color:var(--gld);
+  box-shadow:0 0 24px rgba(255,201,64,.4);
+  animation:streakPop .4s var(--spring) both;
+}
+.streak-fire { font-size:22px; animation:streakFire .5s ease infinite alternate }
+@keyframes streakPop { from{transform:scale(.5) translateY(-20px);opacity:0} to{transform:none;opacity:1} }
+@keyframes streakFire { from{transform:scale(1) rotate(-5deg)} to{transform:scale(1.15) rotate(5deg)} }
+.multiplier-chip {
+  font-family:var(--fm); font-size:10px; letter-spacing:2px; color:var(--red);
+  background:rgba(255,59,92,.1); border:1px solid rgba(255,59,92,.3);
+  padding:3px 12px; border-radius:99px;
+}
+
+/* TYPING INDICATORS */
+#typing-indicators {
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  padding:0 14px 8px; flex-shrink:0; min-height:28px;
+}
+.typing-ind {
+  display:flex; align-items:center; gap:5px;
+  font-family:var(--fm); font-size:9px; color:var(--txt3);
+  background:rgba(255,255,255,.03); border:1px solid var(--bdr);
+  padding:3px 9px; border-radius:99px;
+  transition:all .3s ease; animation:typingFadeIn .3s ease;
+}
+.typing-ind.active { color:var(--grn); border-color:rgba(57,255,138,.22); background:rgba(57,255,138,.05) }
+.typing-dots { display:flex; gap:2px; align-items:center; margin-left:2px }
+.typing-dots span {
+  width:3px; height:3px; border-radius:50%; background:currentColor; display:block;
+  animation:typingBounce .6s ease infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay:.15s }
+.typing-dots span:nth-child(3) { animation-delay:.3s }
+@keyframes typingBounce { 0%,100%{transform:translateY(0);opacity:.5} 50%{transform:translateY(-3px);opacity:1} }
+@keyframes typingFadeIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:none} }
+
+/* ACCUSATION CHAT */
+#accusation-wrap {
+  position:fixed; bottom:0; left:0; right:0; z-index:7000;
+  background:linear-gradient(0deg,rgba(6,9,18,.98) 0%,rgba(6,9,18,.94) 80%,transparent 100%);
+  border-top:1px solid rgba(255,59,92,.3);
+  padding:14px 20px 20px;
+  animation:slideUp .38s var(--ts) both;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:none} }
+.acc-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+}
+.acc-title { font-family:var(--fb); font-size:19px; letter-spacing:2px; color:var(--red) }
+.acc-timer-chip {
+  font-family:var(--fm); font-size:11px; color:var(--gld);
+  background:rgba(255,201,64,.1); border:1px solid rgba(255,201,64,.3);
+  padding:4px 13px; border-radius:99px; transition:color .3s;
+}
+.acc-msgs {
+  display:flex; flex-direction:column; gap:6px; max-height:130px; overflow-y:auto;
+  margin-bottom:10px; padding-right:4px;
+}
+.acc-msg { display:flex; gap:8px; align-items:flex-start; animation:accMsgIn .25s var(--spring) }
+@keyframes accMsgIn { from{transform:translateX(-12px) scale(.95);opacity:0} to{transform:none;opacity:1} }
+.acc-av { font-size:15px; flex-shrink:0; margin-top:1px }
+.acc-body { background:rgba(255,255,255,.04); border:1px solid var(--bdr); border-radius:6px; padding:5px 10px; flex:1 }
+.acc-name { font-family:var(--fm); font-size:8px; color:var(--txt3); letter-spacing:1px; margin-bottom:2px }
+.acc-text { font-size:12px; color:var(--txt); line-height:1.5 }
+.acc-input-row { display:flex; gap:8px }
+.acc-inp {
+  flex:1; background:rgba(255,255,255,.05); border:1px solid var(--bdr2);
+  border-radius:7px; padding:9px 14px; color:var(--txt);
+  font-family:var(--ff); font-size:13px; font-weight:600; outline:none;
+  transition:border-color var(--t);
+}
+.acc-inp:focus { border-color:var(--red); background:rgba(255,59,92,.05) }
+.acc-inp::placeholder { color:var(--txt3); font-weight:400 }
+.acc-send {
+  display:flex; align-items:center; gap:6px;
+  font-family:var(--ff); font-size:12px; font-weight:700; letter-spacing:.5px;
+  padding:9px 17px; border-radius:7px; border:none; cursor:pointer;
+  background:var(--red); color:#fff; transition:all var(--t);
+  box-shadow:0 0 13px rgba(255,59,92,.35);
+}
+.acc-send:hover { transform:translateY(-1px); box-shadow:0 0 22px rgba(255,59,92,.6) }
+
+/* CONFIDENCE BET */
+.sub-bet-row {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 13px; background:rgba(255,201,64,.04);
+  border-top:1px solid rgba(255,201,64,.12);
+}
+.bet-lbl { font-family:var(--fm); font-size:9px; color:var(--gld); letter-spacing:1px; margin-right:2px }
+.bet-btn {
+  font-family:var(--fm); font-size:9px; font-weight:700;
+  padding:4px 11px; border-radius:4px; border:1px solid rgba(255,201,64,.25);
+  background:rgba(255,201,64,.07); color:var(--gld); cursor:pointer; transition:all var(--t);
+}
+.bet-btn:hover, .bet-btn.active {
+  background:rgba(255,201,64,.22); border-color:rgba(255,201,64,.6);
+  box-shadow:0 0 10px rgba(255,201,64,.28);
+}
+
+/* REACTION FLOATERS */
+#reaction-wrap {
+  position:fixed; bottom:130px; right:24px; z-index:7500;
+  pointer-events:none; display:flex; flex-direction:column; align-items:flex-end; gap:4px;
+}
+.react-float {
+  font-size:24px; animation:reactFloat 2.5s ease forwards; pointer-events:none;
+}
+@keyframes reactFloat {
+  0%{transform:translateY(0) scale(1);opacity:1}
+  100%{transform:translateY(-90px) scale(1.5);opacity:0}
+}
+.react-bar {
+  display:flex; gap:5px; padding:8px 13px; border-top:1px solid var(--bdr);
+  background:rgba(0,0,0,.12);
+}
+.react-btn {
+  font-size:17px; background:none; border:none; cursor:pointer;
+  transition:transform .15s var(--spring); padding:2px 4px; border-radius:5px;
+}
+.react-btn:hover { transform:scale(1.4) }
+.react-btn:active { transform:scale(.85) }
+
+/* HEAT BAR */
+.sub-heat-bar {
+  height:3px; background:rgba(255,255,255,.04); position:relative; overflow:hidden;
+}
+.sub-heat-fill {
+  position:absolute; left:0; top:0; bottom:0; border-radius:2px;
+  background:linear-gradient(90deg,rgba(255,59,92,.28),rgba(255,59,92,.85));
+  transition:width .9s ease;
+}
+
+/* SYNTAX HIGHLIGHT in voting */
+.sub-code-view .kw { color:#c792ea }
+.sub-code-view .fn { color:var(--cyn) }
+.sub-code-view .st { color:#c3e88d }
+.sub-code-view .cm { color:rgba(232,238,255,.32); font-style:italic }
+.sub-code-view .nm { color:var(--gld) }
+.sub-code-view .dc { color:rgba(57,255,138,.62); font-style:italic }
+
+/* XP BAR */
+.xp-bar-wrap {
+  margin-top:14px; padding:11px 15px;
+  background:rgba(255,255,255,.03); border:1px solid var(--bdr); border-radius:8px;
+}
+.xp-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:7px }
+.xp-level { font-family:var(--fb); font-size:14px; letter-spacing:1px; color:var(--purp) }
+.xp-pts { font-family:var(--fm); font-size:10px; color:var(--txt3) }
+.xp-track { height:6px; background:rgba(255,255,255,.07); border-radius:3px; overflow:hidden }
+.xp-fill {
+  height:100%; border-radius:3px;
+  background:linear-gradient(90deg,var(--purp),var(--cyn));
+  transition:width 1.4s cubic-bezier(.4,0,.2,1);
+}
+
+/* MVP BADGES */
+.mvp-row {
+  display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:14px; margin-bottom:6px;
+}
+.mvp-badge {
+  display:flex; align-items:center; gap:7px;
+  background:var(--card); border:1px solid var(--bdr2); border-radius:8px; padding:8px 14px;
+  animation:cardSlide .4s ease-out both;
+}
+.mvp-badge:nth-child(2) { animation-delay:.1s }
+.mvp-badge:nth-child(3) { animation-delay:.2s }
+.mvp-icon { font-size:18px }
+.mvp-body { display:flex; flex-direction:column }
+.mvp-title { font-family:var(--fm); font-size:8px; color:var(--txt3); letter-spacing:1px }
+.mvp-name { font-family:var(--ff); font-size:13px; font-weight:700; color:var(--txt) }
+@keyframes cardSlide { from{transform:translateY(18px);opacity:0} to{transform:none;opacity:1} }
+
+/* AI GLITCH REVEAL */
+@keyframes aiGlitch {
+  0%   { transform:none; filter:none; border-color:rgba(255,59,92,.28) }
+  8%   { transform:translateX(-4px); filter:hue-rotate(90deg) brightness(1.6); border-color:var(--red) }
+  16%  { transform:translateX(4px);  filter:hue-rotate(-90deg) }
+  24%  { transform:translateX(-2px) skewX(3deg); filter:brightness(2.2) }
+  32%  { transform:none; filter:none; border-color:rgba(255,59,92,.7) }
+  48%  { opacity:.25 }
+  56%  { opacity:1; filter:brightness(1.9) saturate(2) }
+  72%  { transform:scale(1.025); border-color:var(--red); box-shadow:0 0 36px rgba(255,59,92,.55) }
+  100% { transform:none; filter:none; border-color:var(--red); box-shadow:0 0 22px rgba(255,59,92,.32) }
+}
+.an-card.is-ai.revealing { animation:aiGlitch 1.3s ease forwards !important }
+
+/* SHARE CARD OVERLAY */
+#share-card-wrap {
+  position:fixed; inset:0; z-index:9500;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(6,9,18,.88); backdrop-filter:blur(18px);
+  animation:scrIn .3s ease;
+}
+.share-card {
+  background:var(--bg2); border:1px solid var(--bdr2); border-radius:16px;
+  padding:34px; max-width:400px; width:calc(100% - 40px); text-align:center;
+  box-shadow:0 0 90px rgba(0,0,0,.85), inset 0 0 0 1px rgba(255,255,255,.06);
+  position:relative; overflow:hidden;
+}
+.share-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,transparent,var(--gld),transparent);
+}
+.share-title  { font-family:var(--fb); font-size:44px; letter-spacing:3px; color:var(--txt); margin-bottom:3px }
+.share-sub    { font-family:var(--fm); font-size:10px; letter-spacing:3px; color:var(--txt3); margin-bottom:22px }
+.share-result { font-family:var(--fb); font-size:30px; margin-bottom:8px }
+.share-detail { font-family:var(--fm); font-size:11px; color:var(--txt2); margin-bottom:22px; line-height:1.8; white-space:pre-line }
+.share-btns   { display:flex; gap:9px; justify-content:center }
+.share-btn {
+  display:flex; align-items:center; gap:7px;
+  font-family:var(--ff); font-size:13px; font-weight:700; letter-spacing:.4px;
+  padding:10px 19px; border-radius:7px; border:none; cursor:pointer; transition:all var(--t);
+}
+.sb-copy  { background:var(--gld); color:#000 }
+.sb-copy:hover  { transform:translateY(-2px); box-shadow:0 0 22px rgba(255,201,64,.5) }
+.sb-close { background:transparent; color:var(--txt2); border:1px solid var(--bdr) }
+.sb-close:hover { color:var(--txt); border-color:var(--bdr2) }
+
+/* WILDCARD BUTTON */
+.wildcard-btn {
+  display:flex; align-items:center; gap:7px;
+  font-family:var(--fm); font-size:10px; font-weight:700; letter-spacing:1px;
+  padding:10px 18px; border-radius:7px; cursor:pointer; transition:all var(--t);
+  background:linear-gradient(135deg,rgba(176,96,255,.14),rgba(255,59,92,.14));
+  border:1px solid rgba(176,96,255,.4); color:var(--purp);
+  animation:wildcardPulse 2s ease-in-out infinite;
+}
+.wildcard-btn:hover { background:linear-gradient(135deg,rgba(176,96,255,.28),rgba(255,59,92,.28)); transform:translateY(-1px) }
+.wildcard-btn.used  { opacity:.28; cursor:not-allowed; animation:none; transform:none }
+@keyframes wildcardPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(176,96,255,.45) }
+  50%     { box-shadow:0 0 0 7px rgba(176,96,255,0) }
+}
+
+/* ══════════════════════════════════════════
+   CodeSPY v6 — AWS FEATURES CSS
+══════════════════════════════════════════ */
+
+/* GLOBAL LEADERBOARD on home screen */
+.glb-section {
+  margin-top: 32px; padding-top: 22px;
+  border-top: 1px solid var(--bdr);
+}
+.glb-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 13px;
+}
+.glb-title {
+  font-family: var(--fm); font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; color: var(--txt3);
+  display: flex; align-items: center; gap: 7px;
+}
+.glb-live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--grn);
+  animation: ldPulse 1.6s ease-in-out infinite;
+}
+.glb-refresh {
+  font-family: var(--fm); font-size: 9px; color: var(--txt3);
+  background: none; border: 1px solid var(--bdr); border-radius: 4px;
+  padding: 3px 9px; cursor: pointer; transition: all var(--t);
+}
+.glb-refresh:hover { color: var(--txt); border-color: var(--bdr2); }
+
+.glb-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 11px; border-radius: 7px; margin-bottom: 5px;
+  background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.04);
+  animation: cardSlide .35s ease-out both; transition: border-color var(--t);
+}
+.glb-row:hover { border-color: var(--bdr2); }
+.glb-row:first-child { border-color: rgba(255,201,64,.2); background: rgba(255,201,64,.03); }
+.glb-medal  { font-size: 14px; min-width: 22px; }
+.glb-name   { font-family: var(--fm); font-size: 10px; font-weight: 700; flex: 1; color: var(--txt); }
+.glb-tier   { font-size: 13px; }
+.glb-score  { font-family: var(--fb); font-size: 16px; color: var(--grn); min-width: 44px; text-align: right; }
+.glb-caught { font-size: 12px; }
+.glb-streak { font-family: var(--fm); font-size: 9px; color: var(--gld); }
+.glb-loading, .glb-empty {
+  font-family: var(--fm); font-size: 10px; color: var(--txt3);
+  text-align: center; padding: 16px; letter-spacing: 1px;
+}
+
+/* LIVE STATS BAR on home screen */
+.live-stats-bar {
+  display: flex; align-items: center; gap: 22px;
+  padding: 11px 16px; margin-top: 16px;
+  background: rgba(255,255,255,.03); border: 1px solid var(--bdr); border-radius: 8px;
+}
+.lsb-item { text-align: center; flex: 1 }
+.lsb-val  {
+  font-family: var(--fb); font-size: 22px; display: block;
+  color: var(--red); text-shadow: 0 0 14px rgba(255,59,92,.35);
+}
+.lsb-lbl  {
+  font-family: var(--fm); font-size: 8px; color: var(--txt3);
+  letter-spacing: 1.5px; margin-top: 2px; display: block;
+}
+.lsb-divider {
+  width: 1px; height: 30px; background: var(--bdr);
+}
+
+/* VOICE INDICATOR */
+#voice-indicator {
+  position: fixed; bottom: 18px; left: 18px; z-index: 8000;
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--fm); font-size: 9px; letter-spacing: 1px;
+  color: var(--txt3); background: rgba(0,0,0,.6);
+  border: 1px solid var(--bdr); border-radius: 99px;
+  padding: 5px 12px; backdrop-filter: blur(10px);
+  transition: all .3s ease; cursor: pointer;
+}
+#voice-indicator:hover { color: var(--txt); border-color: var(--bdr2); }
+#voice-indicator.speaking {
+  color: var(--purp); border-color: rgba(176,96,255,.4);
+  background: rgba(176,96,255,.08);
+  animation: voicePulse .8s ease-in-out infinite;
+}
+.voice-bars {
+  display: flex; gap: 2px; align-items: center; height: 12px;
+}
+.voice-bar {
+  width: 2px; background: currentColor; border-radius: 1px;
+  animation: voiceBar .6s ease-in-out infinite;
+}
+.voice-bar:nth-child(1) { height: 4px; animation-delay: 0s; }
+.voice-bar:nth-child(2) { height: 10px; animation-delay: .1s; }
+.voice-bar:nth-child(3) { height: 6px; animation-delay: .2s; }
+.voice-bar:nth-child(4) { height: 12px; animation-delay: .05s; }
+.voice-bar:nth-child(5) { height: 5px; animation-delay: .15s; }
+@keyframes voiceBar {
+  0%,100% { transform: scaleY(.4); }
+  50%     { transform: scaleY(1); }
+}
+@keyframes voicePulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(176,96,255,.4); }
+  50%     { box-shadow: 0 0 0 6px rgba(176,96,255,0); }
+}
+#voice-indicator.muted .voice-bars { opacity: .25; }
+
+/* AWS POWERED BADGE */
+.aws-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--fm); font-size: 9px; letter-spacing: 1.5px;
+  color: rgba(255,153,0,.9); border: 1px solid rgba(255,153,0,.25);
+  background: rgba(255,153,0,.07); padding: 4px 12px; border-radius: 4px;
+  margin-left: 8px;
+}
+.aws-badge svg { width: 12px; height: 12px; }
+
+/* BEDROCK LOADING indicator on voting screen */
+.bedrock-loading {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--fm); font-size: 10px; color: var(--purp);
+  padding: 12px 16px; border: 1px solid rgba(176,96,255,.2);
+  border-radius: 8px; background: rgba(176,96,255,.05);
+  margin-bottom: 12px; animation: bedrockPulse 1.5s ease-in-out infinite;
+}
+@keyframes bedrockPulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+.bedrock-spinner {
+  width: 14px; height: 14px; border: 2px solid rgba(176,96,255,.3);
+  border-top-color: var(--purp); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* GLOBAL LEADERBOARD on results screen */
+.global-lb-section {
+  margin-top: 18px; padding-top: 18px;
+  border-top: 1px solid var(--bdr);
+}
+.gls-title {
+  font-family: var(--fm); font-size: 9px; font-weight: 700;
+  letter-spacing: 2px; color: var(--txt3); margin-bottom: 11px;
+  display: flex; align-items: center; gap: 7px;
+}
+
+/* HOME SCREEN - badge update */
+.home-badge-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ░░ GLOBAL BG LAYERS ░░ -->
+<div id="bg-dots"></div>
+<div id="bg-vig"></div>
+<div id="scanlines"></div>
+
+<!-- ░░ OVERLAYS ░░ -->
+<div id="toasts" aria-live="polite"></div>
+<div id="confetti-wrap"></div>
+
+<!-- Sound Toggle -->
+<button id="sound-btn" onclick="SFX.unlock();const m=SFX.toggleMute();this.textContent=m?'🔇':'🔊';Toast.info(m?'Muted':'Sound on')">🔊</button>
+
+<!-- Phase Cinematic Flash -->
+<div id="phase-flash">
+  <div class="pf-icon" id="pf-icon"></div>
+  <div class="pf-title" id="pf-title"></div>
+  <div class="pf-sub" id="pf-sub"></div>
+</div>
+
+<div id="app">
+
+<!-- ══════════════════════════════════════════
+  HOME
+══════════════════════════════════════════ -->
+<div id="s-home" class="screen active">
+<div class="home-wrap">
+  <div class="home-left">
+    <div class="home-badge-row">
+      <div class="home-badge">
+        <span class="live-dot"></span>
+        CODESPY — BETA
+      </div>
+      <div class="aws-badge">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.527 10.747c-.895 0-1.626.313-2.192.94-.566.626-.849 1.468-.849 2.527 0 1.065.28 1.908.84 2.53.56.62 1.293.93 2.201.93.907 0 1.636-.314 2.188-.941.55-.628.826-1.473.826-2.534 0-1.06-.276-1.9-.826-2.52-.552-.62-1.284-.932-2.188-.932zm0 8.228c-1.462 0-2.64-.49-3.53-1.467-.89-.977-1.335-2.26-1.335-3.849 0-1.59.448-2.877 1.344-3.858.896-.982 2.07-1.473 3.52-1.473 1.453 0 2.63.49 3.523 1.47.892.982 1.339 2.27 1.339 3.861 0 1.59-.447 2.876-1.34 3.852-.893.977-2.07 1.464-3.52 1.464zM6.756 10.9c-.36-.07-.757-.104-1.192-.104-1.076 0-1.927.337-2.55 1.012-.624.676-.936 1.586-.936 2.73 0 1.127.302 2.026.906 2.697.603.671 1.41 1.007 2.42 1.007.66 0 1.25-.122 1.773-.365V10.9zm.74-1.29v8.28c-.85.404-1.85.607-2.997.607-1.5 0-2.702-.484-3.605-1.453C0 16.074-.451 14.8-.451 13.22c0-1.592.483-2.873 1.45-3.843.966-.97 2.237-1.455 3.81-1.455.548 0 1.083.055 1.606.165l1.08.523z"/></svg>
+        POWERED BY AWS
+      </div>
+    </div>
+    <h1>
+      <span class="hero-word hw1">CODE</span>
+      <span class="hero-word hw2">SPY</span>
+    </h1>
+    <p class="hero-sub">AI AMONG CODERS</p>
+    <p class="hero-desc">
+      A real-time multiplayer arena where everyone codes the same challenge — but one player is secretly an AI.
+      <strong style="color:var(--txt)">Write code. Spot the impostor. Earn points.</strong>
+      Anyone can play — from curious beginners to elite developers.
+    </p>
+    <div class="home-actions">
+      <button class="btn-main bm-red" onclick="SFX.unlock();SFX.click();App.goto('difficulty')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+        CREATE ROOM
+      </button>
+      <button class="btn-main bm-outline" onclick="SFX.click();App.goto('join')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13 12H3"/></svg>
+        JOIN WITH CODE
+      </button>
+      <button class="btn-ghost-sm" onclick="SFX.click();App.goto('howto')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        HOW TO PLAY
+      </button>
+    </div>
+    <div class="home-stats">
+      <div class="stat"><span class="stat-n">4</span><span class="stat-l">TIERS</span></div>
+      <div class="stat"><span class="stat-n">20</span><span class="stat-l">MAX PLAYERS</span></div>
+      <div class="stat"><span class="stat-n">+200</span><span class="stat-l">PTS MAX</span></div>
+      <div class="stat"><span class="stat-n">1</span><span class="stat-l">AI HIDING</span></div>
+    </div>
+    <div class="live-stats-bar">
+      <div class="lsb-item"><span class="lsb-val" id="stat-games">—</span><span class="lsb-lbl">GAMES PLAYED</span></div>
+      <div class="lsb-divider"></div>
+      <div class="lsb-item"><span class="lsb-val" id="stat-rate">—</span><span class="lsb-lbl">CATCH RATE</span></div>
+      <div class="lsb-divider"></div>
+      <div class="lsb-item"><span class="lsb-val" id="stat-players">—</span><span class="lsb-lbl">AGENTS WORLDWIDE</span></div>
+    </div>
+    <div class="glb-section">
+      <div class="glb-header">
+        <span class="glb-title"><span class="glb-live-dot"></span>GLOBAL LEADERBOARD</span>
+        <button class="glb-refresh" onclick="GlobalLB.render('glb-home-list')">↻ Refresh</button>
+      </div>
+      <div id="glb-home-list"></div>
+    </div>
+  </div>
+  <div class="home-right">
+    <div class="prev-card">
+      <div class="pc-hdr">
+        <div class="pc-dots"><div class="pcd pcdr"></div><div class="pcd pcdy"></div><div class="pcd pcdg"></div></div>
+        <span class="pc-lbl">ROOM X7K2QP · AGENT TIER</span>
+        <div class="pc-live"><span class="live-dot" style="width:6px;height:6px"></span>LIVE</div>
+      </div>
+      <div class="pc-phase-bar">
+        <span class="pc-phase-lbl">⚡ CODING PHASE</span>
+        <span class="pc-timer">1:47</span>
+      </div>
+      <div class="pc-code-block"><span class="ck">def</span> <span class="cf">two_sum</span>(nums, target):
+    <span class="co"># find using hash map</span>
+    seen = {}
+    <span class="ck">for</span> i, n <span class="ck">in</span> <span class="cf">enumerate</span>(nums):
+        comp = target - n
+        <span class="ck">if</span> comp <span class="ck">in</span> seen:
+            <span class="ck">return</span> [seen[comp], i]
+        seen[n] = i</div>
+      <div class="pc-players-list">
+        <div class="pc-player"><div class="pc-av pc-av-h">🥷</div><div class="pc-bar-w"><div class="pc-bar pc-bar-h" style="width:88%"></div></div><span class="pc-pts pc-pts-h">880</span></div>
+        <div class="pc-player"><div class="pc-av pc-av-a">🤖</div><div class="pc-bar-w"><div class="pc-bar pc-bar-a" style="width:74%"></div></div><span class="pc-pts pc-pts-a">740</span></div>
+        <div class="pc-player"><div class="pc-av pc-av-h">🦊</div><div class="pc-bar-w"><div class="pc-bar pc-bar-h" style="width:60%"></div></div><span class="pc-pts pc-pts-h">600</span></div>
+        <div class="pc-player"><div class="pc-av pc-av-h">🦅</div><div class="pc-bar-w"><div class="pc-bar pc-bar-h" style="width:42%"></div></div><span class="pc-pts pc-pts-h">420</span></div>
+      </div>
+      <div class="pc-footer">
+        <span class="pc-subm">3 / 4 SUBMITTED</span>
+        <div class="pc-vbar"><div class="pvb c"></div><div class="pvb c"></div><div class="pvb c"></div><div class="pvb"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  DIFFICULTY SELECTION
+══════════════════════════════════════════ -->
+<div id="s-difficulty" class="screen">
+<div class="diff-shell">
+  <button class="back-btn" style="position:relative;top:0;left:0;margin-bottom:20px" onclick="SFX.click();App.goto('home')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>BACK
+  </button>
+  <div class="diff-header">
+    <h2 class="diff-title">SELECT DIFFICULTY</h2>
+    <p class="diff-subtitle">CHOOSE YOUR ARENA — ANYONE CAN PLAY</p>
+  </div>
+  <div class="tier-grid">
+
+    <!-- ROOKIE -->
+    <div class="tier-card t-rookie" onclick="SFX.click();GM.selectDifficulty('rookie')">
+      <div class="tier-glow"></div>
+      <span class="tier-icon">🌱</span>
+      <span class="tier-name">ROOKIE</span>
+      <p class="tier-desc">No coding experience needed. Pure logic & pattern recognition. Perfect for curious non-coders who want to try!</p>
+      <div class="tier-meta">
+        <span class="tier-pill">⏱ 2:30</span>
+        <span class="tier-pill">+50 pts</span>
+        <span class="tier-pill">✏️ Write text</span>
+      </div>
+    </div>
+
+    <!-- APPRENTICE -->
+    <div class="tier-card t-apprentice" onclick="SFX.click();GM.selectDifficulty('apprentice')">
+      <div class="tier-glow"></div>
+      <span class="tier-icon">⚡</span>
+      <span class="tier-name">APPRENTICE</span>
+      <p class="tier-desc">Light coding — basic loops, conditions, string operations. Great if you've taken an intro CS class!</p>
+      <div class="tier-meta">
+        <span class="tier-pill">⏱ 3:00</span>
+        <span class="tier-pill">+100 pts</span>
+        <span class="tier-pill">🐍 Python basics</span>
+      </div>
+    </div>
+
+    <!-- AGENT -->
+    <div class="tier-card t-agent" onclick="SFX.click();GM.selectDifficulty('agent')">
+      <div class="tier-glow"></div>
+      <span class="tier-icon">🔥</span>
+      <span class="tier-name">AGENT</span>
+      <p class="tier-desc">Real DSA problems — hash maps, stacks, binary search. For developers who know their algorithms!</p>
+      <div class="tier-meta">
+        <span class="tier-pill">⏱ 4:00</span>
+        <span class="tier-pill">+150 pts</span>
+        <span class="tier-pill">🧠 Algorithms</span>
+      </div>
+    </div>
+
+    <!-- ELITE -->
+    <div class="tier-card t-elite" onclick="SFX.click();GM.selectDifficulty('elite')">
+      <div class="tier-glow"></div>
+      <span class="tier-icon">💀</span>
+      <span class="tier-name">ELITE</span>
+      <p class="tier-desc">Expert level — LRU caches, DP, graph traversal. For senior engineers and competitive programmers only.</p>
+      <div class="tier-meta">
+        <span class="tier-pill">⏱ 5:00</span>
+        <span class="tier-pill">+200 pts</span>
+        <span class="tier-pill">☠️ Expert only</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  CREATE ROOM
+══════════════════════════════════════════ -->
+<div id="s-create" class="screen">
+<div class="mbox">
+  <button class="back-btn" onclick="SFX.click();App.goto('difficulty')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>BACK
+  </button>
+  <span class="m-icon">⚡</span>
+  <h2 class="m-title">CREATE ROOM</h2>
+  <p class="m-desc">You're the host. Share your room code with friends to play.</p>
+  <div class="fld">
+    <label class="fld-lbl">YOUR CODENAME</label>
+    <input id="create-name" class="fld-inp" type="text" placeholder="Agent_Zero" maxlength="20" autocomplete="off"/>
+  </div>
+  <button class="btn-act ba-red" onclick="SFX.click();GM.createRoom()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    GENERATE ROOM
+  </button>
+  <div id="room-code-reveal" class="code-reveal hidden">
+    <div class="cr-lbl">SHARE THIS CODE</div>
+    <div class="cr-row">
+      <div class="cr-code" id="code-display-text">------</div>
+      <button class="copy-btn" onclick="GM.copyCode()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+    <p class="cr-hint">Bot agents join automatically for demo play</p>
+    <button class="btn-act ba-red" onclick="SFX.click();App.goto('lobby')">ENTER LOBBY →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  JOIN ROOM
+══════════════════════════════════════════ -->
+<div id="s-join" class="screen">
+<div class="mbox">
+  <button class="back-btn" onclick="SFX.click();App.goto('home')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>BACK
+  </button>
+  <span class="m-icon">🔗</span>
+  <h2 class="m-title">JOIN ROOM</h2>
+  <p class="m-desc">Enter the 6-character code your host shared with you.</p>
+  <div class="fld">
+    <label class="fld-lbl">YOUR CODENAME</label>
+    <input id="join-name" class="fld-inp" type="text" placeholder="Shadow_X" maxlength="20" autocomplete="off"/>
+  </div>
+  <div class="fld">
+    <label class="fld-lbl">ROOM CODE</label>
+    <input id="join-code" class="fld-inp code-inp" type="text" placeholder="ABC123" maxlength="6"
+           oninput="this.value=this.value.toUpperCase()" autocomplete="off"/>
+  </div>
+  <div id="join-err" class="fld-err hidden"></div>
+  <button class="btn-act ba-red" onclick="SFX.click();GM.joinRoom()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13 12H3"/></svg>
+    JOIN MISSION
+  </button>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  HOW TO PLAY
+══════════════════════════════════════════ -->
+<div id="s-howto" class="screen">
+<div class="hbox">
+  <button class="back-btn" onclick="SFX.click();App.goto('home')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>BACK
+  </button>
+  <h2 class="h-title">HOW TO PLAY</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-n">01</div><div class="step-ico">🎯</div>
+      <div class="step-body"><h3>PICK YOUR DIFFICULTY</h3><p>4 tiers: Rookie (no code needed!), Apprentice, Agent, Elite. Anyone can play!</p></div>
+    </div>
+    <div class="step">
+      <div class="step-n">02</div><div class="step-ico">🏠</div>
+      <div class="step-body"><h3>CREATE OR JOIN</h3><p>Host generates a 6-char room code. Share it with friends. Up to 20 players per room.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-n">03</div><div class="step-ico">💻</div>
+      <div class="step-body"><h3>CODING PHASE</h3><p>Everyone solves the same challenge. An AI secretly joins and submits a solution — sometimes flawless, sometimes with subtle mistakes!</p></div>
+    </div>
+    <div class="step">
+      <div class="step-n">04</div><div class="step-ico">🕵️</div>
+      <div class="step-body"><h3>SPY PHASE — SPOT THE AI</h3><p>All submissions shown anonymously. Analyze patterns, style, and structure. Vote for which one you think is AI-written.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-n">05</div><div class="step-ico">🏆</div>
+      <div class="step-body"><h3>RESULTS — EARN POINTS</h3><p>Correctly identify the AI → earn tier bonus points. The AI is revealed. Leaderboard updates. Play again!</p></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  LOBBY
+══════════════════════════════════════════ -->
+<div id="s-lobby" class="screen">
+<div class="lobby-shell">
+  <div class="lobby-hdr">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="room-chip">
+        <span class="rc-lbl">ROOM</span>
+        <strong class="rc-code" id="lby-code">------</strong>
+        <button class="copy-btn" onclick="GM.copyCode()" style="width:26px;height:26px">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px;height:11px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="rnd-badge" id="lobby-rnd">ROUND 1</div>
+  </div>
+
+  <div class="lobby-body">
+    <div class="lobby-heading">
+      <div class="lobby-main-t">MISSION BRIEFING</div>
+      <div class="lobby-sub-t" id="lby-sub">WAITING FOR AGENTS...</div>
+      <div class="lobby-tier-info" id="lobby-tier-info"></div>
+    </div>
+    <div class="players-hdr">
+      <span class="ph-lbl">AGENTS ONLINE</span>
+      <span class="ph-count" id="lby-count">0 / 20</span>
+    </div>
+    <div id="players-grid" class="players-grid"></div>
+  </div>
+
+  <div class="lobby-footer">
+    <span class="lobby-hint" id="lby-hint">Need at least 2 agents to start</span>
+    <button class="lbtn lbtn-leave" onclick="GM.leave()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      LEAVE
+    </button>
+    <button id="start-btn" class="lbtn lbtn-start" onclick="GM.startGame()" disabled>
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+      LAUNCH MISSION
+    </button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  CODING
+══════════════════════════════════════════ -->
+<div id="s-coding" class="screen">
+<div class="coding-shell">
+  <!-- Top bar -->
+  <div class="ctb">
+    <div class="ctb-l">
+      <div class="phase-chip pc-code"><span class="phase-dot"></span> CODING PHASE</div>
+      <span class="rnd-lbl" id="round-label">ROUND 1</span>
+    </div>
+    <div id="timer-wrap" class="timer-wrap">
+      <svg class="timer-svg" viewBox="0 0 56 56">
+        <circle class="tr-bg" cx="28" cy="28" r="22" fill="none" stroke-width="3.5"/>
+        <circle class="tr-fg" id="timer-ring-fg" cx="28" cy="28" r="22"
+                fill="none" stroke-width="3.5" stroke-dasharray="138.2" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-num tn-ok" id="timer-text">3:00</div>
+    </div>
+    <div class="ctb-r">
+      <div class="sub-pill">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg>
+        <span id="sub-count-txt">0/0</span> submitted
+      </div>
+    </div>
+  </div>
+
+  <!-- Typing indicators -->
+  <div id="typing-indicators"></div>
+  <!-- Body -->
+  <div class="coding-body">
+
+    <!-- Challenge Pane -->
+    <div class="ch-pane">
+      <div class="ch-pane-hdr">
+        <span id="ch-diff" class="diff-badge d-agent">AGENT</span>
+        <h3 id="ch-title" class="ch-title">Challenge</h3>
+      </div>
+      <div class="ch-body">
+        <p id="ch-desc" class="ch-desc"></p>
+        <div class="ch-task-block">
+          <span class="ch-task-lbl">YOUR TASK</span>
+          <p id="ch-task" class="ch-task-txt"></p>
+        </div>
+        <div class="io-block">
+          <span class="io-tag io-in">EXAMPLE INPUT</span>
+          <code id="ch-input" class="io-val"></code>
+        </div>
+        <div class="io-block">
+          <span class="io-tag io-out">EXPECTED OUTPUT</span>
+          <code id="ch-output" class="io-val"></code>
+        </div>
+        <div class="ch-hint" id="ch-hint-block">
+          <span class="ch-hint-ico">💡</span>
+          <p id="ch-hint" class="ch-hint-txt"></p>
+        </div>
+        <div class="ch-agents">
+          <span class="ch-ags-lbl">AGENTS</span>
+          <div id="coding-avatars" class="ch-av-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor Pane -->
+    <div class="ed-pane">
+      <div class="ed-bar">
+        <div class="ed-dots"><div class="ed-dot edr"></div><div class="ed-dot edy"></div><div class="ed-dot edg"></div></div>
+        <span class="ed-fname">solution.py</span>
+        <span id="editor-status" class="ed-st ed-st-ready">● READY</span>
+      </div>
+      <div class="ed-body">
+        <div class="ed-lines" id="line-nums">1</div>
+        <textarea id="code-editor" class="ed-ta"
+                  placeholder="# Write your solution here&#10;&#10;def solution():&#10;    pass"
+                  spellcheck="false"
+                  oninput="GM.onEdit()"></textarea>
+      </div>
+      <div class="ed-footer">
+        <div class="ed-fl">
+          <span class="ed-lang" id="ed-lang">Python</span>
+          <span id="line-count" class="ed-lc">1 line</span>
+        </div>
+        <div class="ed-fr">
+          <span id="sub-done-msg" class="sub-done-msg hidden">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg>
+            Submitted — waiting for others
+          </span>
+          <button id="submit-btn" class="btn-submit" onclick="SFX.click();GM.submit()" disabled>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+            SUBMIT
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .coding-body -->
+</div><!-- .coding-shell -->
+</div><!-- #s-coding -->
+
+<!-- ══════════════════════════════════════════
+  VOTING
+══════════════════════════════════════════ -->
+<div id="s-voting" class="screen">
+<div class="voting-shell">
+  <div class="v-hdr">
+    <div class="phase-chip pc-spy" style="display:inline-flex;margin-bottom:10px">
+      <span class="phase-dot" style="background:var(--red)"></span> SPY PHASE
+    </div>
+    <h2 class="v-title">SPOT THE AI</h2>
+    <p class="v-sub">One of these was written by AI. Study the patterns. Trust your instincts. Vote wisely.</p>
+    <div class="spy-tips">
+      <span class="spy-tip">🔍 Perfect structure</span>
+      <span class="spy-tip">📐 Textbook patterns</span>
+      <span class="spy-tip">🤖 Type annotations</span>
+      <span class="spy-tip">⚡ No personal style</span>
+      <span class="spy-tip">📝 Big-O comments</span>
+      <span class="spy-tip">🧪 But... AI can make mistakes too!</span>
+    </div>
+    <div class="vote-prog" id="vote-tally">0 / 0 votes cast</div>
+  </div>
+  <div id="bedrock-status"></div>
+  <div id="subs-grid" class="subs-grid"></div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+  RESULTS
+══════════════════════════════════════════ -->
+<div id="s-results" class="screen">
+<div class="results-shell">
+  <div class="res-hdr">
+    <div class="phase-chip pc-result" style="display:inline-flex;margin-bottom:10px">
+      <span class="phase-dot" style="background:var(--gld);animation:none"></span> MISSION COMPLETE
+    </div>
+    <h2 class="res-title">DEBRIEF</h2>
+    <p class="res-sub">THE AI HAS BEEN REVEALED</p>
+    <div id="xp-bar-container"></div>
+    <div id="mvp-row" class="mvp-row"></div>
+  </div>
+  <div class="res-body">
+    <div class="panel">
+      <div class="panel-hdr">LEADERBOARD</div>
+      <div class="panel-body" id="lb-list"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr">CODE ANALYSIS</div>
+      <div class="panel-body" id="analysis-list"></div>
+    </div>
+  </div>
+  <div class="global-lb-section">
+    <div class="gls-title"><span class="glb-live-dot"></span>GLOBAL LEADERBOARD — TOP 10</div>
+    <div id="glb-results-list"></div>
+  </div>
+  <div class="res-actions">
+    <button class="rbtn rb-red" onclick="SFX.click();GM.playAgain()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+      PLAY AGAIN
+    </button>
+    <button id="wildcard-btn" class="wildcard-btn hidden" onclick="Wildcard.use()">🃏 WILDCARD — Double or Nothing</button>
+    <button class="rbtn rb-ghost" onclick="SFX.click();ShareCard.show()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      SHARE RESULT
+    </button>
+    <button class="rbtn rb-ghost" onclick="SFX.click();App.goto('home')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      MAIN MENU
+    </button>
+  </div>
+</div>
+</div>
+
+</div><!-- #app -->
+
+<!-- ░░ SCRIPTS ░░ -->
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CodeSPY — SOUND ENGINE
+//  Built entirely with Web Audio API — zero external files.
+//  Every sound is synthesized procedurally.
+// ═══════════════════════════════════════════════════════════
+
+const SFX = (() => {
+  let ctx = null;
+  let muted = false;
+  let masterGain = null;
+
+  function _init() {
+    if (ctx) return;
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0.4;
+      masterGain.connect(ctx.destination);
+    } catch (e) {
+      console.warn('Web Audio not supported');
+    }
+  }
+
+  function _resume() {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  }
+
+  // ── core tone helper ──
+  function _tone({ freq = 440, type = 'sine', duration = 0.15, vol = 0.3,
+                   attack = 0.01, decay = 0.05, sustain = 0.7, release = 0.1,
+                   freqEnd = null, detune = 0 } = {}) {
+    if (!ctx || muted) return;
+    _resume();
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    if (freqEnd !== null) osc.frequency.exponentialRampToValueAtTime(freqEnd, now + duration);
+    if (detune) osc.detune.value = detune;
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(vol, now + attack);
+    gain.gain.linearRampToValueAtTime(vol * sustain, now + attack + decay);
+    gain.gain.setValueAtTime(vol * sustain, now + duration - release);
+    gain.gain.linearRampToValueAtTime(0, now + duration);
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(now);
+    osc.stop(now + duration + 0.01);
+  }
+
+  // ── noise helper ──
+  function _noise(duration = 0.1, vol = 0.2, freq_low = 200, freq_high = 2000) {
+    if (!ctx || muted) return;
+    _resume();
+    const now = ctx.currentTime;
+    const bufferSize = Math.floor(ctx.sampleRate * duration);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = (freq_low + freq_high) / 2;
+    filter.Q.value = 0.5;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.linearRampToValueAtTime(0, now + duration);
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(masterGain);
+    source.start(now);
+  }
+
+  // ═══════════════════════════
+  //  GAME SOUNDS
+  // ═══════════════════════════
+
+  // UI: button click
+  function click() {
+    _tone({ freq: 800, type: 'sine', duration: 0.08, vol: 0.18, attack: 0.002, decay: 0.03 });
+  }
+
+  // UI: hover
+  function hover() {
+    _tone({ freq: 600, type: 'sine', duration: 0.05, vol: 0.08, attack: 0.002, decay: 0.02 });
+  }
+
+  // UI: nav / screen change
+  function nav() {
+    _tone({ freq: 440, freqEnd: 660, type: 'sine', duration: 0.18, vol: 0.22, attack: 0.01 });
+  }
+
+  // Success: submit / room created
+  function success() {
+    const delays = [0, 0.09, 0.18];
+    const freqs  = [523, 659, 784]; // C-E-G chord
+    delays.forEach((d, i) => {
+      setTimeout(() => _tone({ freq: freqs[i], duration: 0.25, vol: 0.25, attack: 0.01, release: 0.15 }), d * 1000);
+    });
+  }
+
+  // Error / wrong
+  function error() {
+    _tone({ freq: 200, freqEnd: 120, type: 'sawtooth', duration: 0.2, vol: 0.3, attack: 0.005 });
+  }
+
+  // Keystroke in editor
+  function keystroke() {
+    const freqs = [120, 140, 160, 180, 200];
+    _noise(0.04, 0.06, 800, 4000);
+    _tone({ freq: freqs[~~(Math.random() * freqs.length)], type: 'square', duration: 0.04, vol: 0.04, attack: 0.001, decay: 0.01 });
+  }
+
+  // Timer tick (plays every second when under 30s)
+  function timerTick() {
+    _tone({ freq: 1200, type: 'square', duration: 0.06, vol: 0.15, attack: 0.001, decay: 0.02 });
+  }
+
+  // Timer urgent (under 10s)
+  function timerUrgent() {
+    _tone({ freq: 1800, freqEnd: 1200, type: 'sawtooth', duration: 0.12, vol: 0.28, attack: 0.001, decay: 0.05 });
+  }
+
+  // Player joined lobby
+  function playerJoin() {
+    _tone({ freq: 660, freqEnd: 880, type: 'sine', duration: 0.2, vol: 0.2, attack: 0.01 });
+  }
+
+  // Phase change: CODING → VOTING
+  function phaseVoting() {
+    // Tense sting: descending minor
+    const seq = [{ f: 523, d: 0 }, { f: 466, d: 0.12 }, { f: 415, d: 0.24 }, { f: 392, d: 0.36 }];
+    seq.forEach(({ f, d }) => {
+      setTimeout(() => _tone({ freq: f, type: 'sawtooth', duration: 0.2, vol: 0.3, attack: 0.01, detune: 5 }), d * 1000);
+    });
+  }
+
+  // Phase change: VOTING → RESULTS
+  function phaseResults() {
+    // Triumphant ascending
+    const seq = [{ f: 392, d: 0 }, { f: 494, d: 0.1 }, { f: 587, d: 0.2 }, { f: 784, d: 0.3 }];
+    seq.forEach(({ f, d }) => {
+      setTimeout(() => _tone({ freq: f, type: 'sine', duration: 0.3, vol: 0.32, attack: 0.02 }), d * 1000);
+    });
+    setTimeout(() => _noise(0.3, 0.15, 400, 2000), 400);
+  }
+
+  // Phase change: LOBBY → CODING
+  function phaseCoding() {
+    // Alert / alarm feel
+    [0, 0.15, 0.3].forEach((d, i) => {
+      setTimeout(() => {
+        _tone({ freq: 880, type: 'square', duration: 0.12, vol: 0.25, attack: 0.005 });
+      }, d * 1000);
+    });
+    setTimeout(() => _tone({ freq: 1320, freqEnd: 880, type: 'square', duration: 0.4, vol: 0.3, attack: 0.01 }), 500);
+  }
+
+  // Vote cast
+  function vote() {
+    _tone({ freq: 330, freqEnd: 220, type: 'sine', duration: 0.25, vol: 0.22, attack: 0.02 });
+    setTimeout(() => _tone({ freq: 660, type: 'sine', duration: 0.15, vol: 0.15, attack: 0.01 }), 100);
+  }
+
+  // AI correctly identified
+  function aiCaught() {
+    const arp = [523, 659, 784, 1047];
+    arp.forEach((f, i) => setTimeout(() => _tone({ freq: f, duration: 0.15, vol: 0.28, attack: 0.01, type: 'sine' }), i * 70));
+    setTimeout(() => _noise(0.4, 0.2, 600, 3000), 350);
+  }
+
+  // AI escaped (wrong vote)
+  function aiEscaped() {
+    _tone({ freq: 440, freqEnd: 200, type: 'sawtooth', duration: 0.4, vol: 0.35, attack: 0.01 });
+    setTimeout(() => _tone({ freq: 180, type: 'square', duration: 0.3, vol: 0.2, attack: 0.01 }), 250);
+  }
+
+  // Confetti / win celebration
+  function confettiPop() {
+    for (let i = 0; i < 6; i++) {
+      setTimeout(() => {
+        const freq = 600 + Math.random() * 800;
+        _tone({ freq, freqEnd: freq * 1.5, duration: 0.18, vol: 0.18 + Math.random() * 0.1, type: 'sine' });
+        _noise(0.05, 0.08, 2000, 8000);
+      }, i * 100 + Math.random() * 80);
+    }
+  }
+
+  // Toast notification
+  function toastInfo() {
+    _tone({ freq: 880, type: 'sine', duration: 0.1, vol: 0.12, attack: 0.005 });
+  }
+  function toastSuccess() {
+    _tone({ freq: 1047, type: 'sine', duration: 0.12, vol: 0.15, attack: 0.005 });
+  }
+  function toastWarn() {
+    _tone({ freq: 660, type: 'triangle', duration: 0.15, vol: 0.2, attack: 0.005 });
+  }
+
+  // Copy code
+  function copy() {
+    _tone({ freq: 1200, freqEnd: 1600, type: 'sine', duration: 0.1, vol: 0.15, attack: 0.002 });
+  }
+
+  // Ambient: lobby hum (low drone, barely audible)
+  let _lobbyDroneNode = null;
+  function startLobbyAmbient() {
+    if (!ctx || muted) return;
+    _resume();
+    stopLobbyAmbient();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 60;
+    gain.gain.value = 0.04;
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start();
+    _lobbyDroneNode = { osc, gain };
+  }
+  function stopLobbyAmbient() {
+    if (_lobbyDroneNode) {
+      try { _lobbyDroneNode.osc.stop(); } catch(e) {}
+      _lobbyDroneNode = null;
+    }
+  }
+
+  // Toggle mute
+  function toggleMute() {
+    muted = !muted;
+    if (masterGain) masterGain.gain.value = muted ? 0 : 0.4;
+    return muted;
+  }
+
+  function isMuted() { return muted; }
+
+  // Must be called on first user interaction to unlock audio context
+  function unlock() { _init(); _resume(); }
+
+  return {
+    unlock, click, hover, nav, success, error,
+    keystroke, timerTick, timerUrgent,
+    playerJoin, phaseVoting, phaseResults, phaseCoding,
+    vote, aiCaught, aiEscaped, confettiPop,
+    toastInfo, toastSuccess, toastWarn, copy,
+    startLobbyAmbient, stopLobbyAmbient,
+    toggleMute, isMuted
+  };
+})();
+
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CodeSPY — UTILITIES
+// ═══════════════════════════════════════════════════════════
+
+// ── HELPERS ──
+const H = (() => {
+  const CC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const AV = ['🧑‍💻','👩‍💻','🥷','🦊','🐺','🦅','👾','🎭','🔮','⚡','💀','🐉','🦁','🤺','🕵️','🦾','🤖','🧠','🦿','🎯'];
+  const ADJ = ['Shadow','Ghost','Cyber','Dark','Void','Neon','Rogue','Stealth','Phantom','Hyper','Turbo','Apex','Zero','Iron','Storm'];
+  const NON = ['Wolf','Fox','Hawk','Byte','Node','Crypt','Grid','Zero','Pulse','Agent','Blade','Core','Drift','Edge','Flux'];
+
+  return {
+    roomCode: () => Array.from({length:6}, () => CC[~~(Math.random()*CC.length)]).join(''),
+    randomName: () => ADJ[~~(Math.random()*ADJ.length)] + '_' + NON[~~(Math.random()*NON.length)],
+    randomAv: () => AV[~~(Math.random()*AV.length)],
+    fmtTime: s => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`,
+    esc: s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; },
+    shuffle: a => {
+      const b = [...a];
+      for (let i = b.length-1; i > 0; i--) {
+        const j = ~~(Math.random()*(i+1));
+        [b[i],b[j]] = [b[j],b[i]];
+      }
+      return b;
+    },
+    copy: t => navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.resolve(false),
+    lerp: (a, b, t) => a + (b-a)*t,
+    clamp: (v, min, max) => Math.min(Math.max(v, min), max),
+    randomRange: (min, max) => min + Math.random()*(max-min),
+  };
+})();
+
+// ── TOAST SYSTEM ──
+const Toast = (() => {
+  let queue = [], active = 0, MAX = 5;
+
+  function show(msg, type, ms = 3200) {
+    if (active >= MAX) { queue.push({msg,type,ms}); return; }
+    active++;
+    const el = document.createElement('div');
+    el.className = `toast t${type}`;
+    el.innerHTML = `<span class="toast-msg">${msg}</span>`;
+    el.onclick = rm;
+    document.getElementById('toasts').appendChild(el);
+
+    // Sound
+    const soundMap = { i: 'toastInfo', s: 'toastSuccess', w: 'toastWarn', e: 'toastWarn' };
+    if (typeof SFX !== 'undefined') SFX[soundMap[type] || 'toastInfo']?.();
+
+    function rm() {
+      el.style.animation = 'tPop .18s ease reverse';
+      setTimeout(() => {
+        el.remove();
+        active--;
+        if (queue.length) { const n = queue.shift(); show(n.msg, n.type, n.ms); }
+      }, 160);
+    }
+    setTimeout(rm, ms);
+  }
+
+  return {
+    info:    (m,d) => show(m,'i',d),
+    success: (m,d) => show(m,'s',d),
+    warn:    (m,d) => show(m,'w',d),
+    error:   (m,d) => show(m,'e',d),
+  };
+})();
+
+// ── CONFETTI ──
+function launchConfetti() {
+  const wrap = document.getElementById('confetti-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const cols = ['#ff3b5c','#39ff8a','#00cfff','#ffc940','#b060ff','#fff','#ff9f00'];
+  const shapes = ['■','▲','●','◆','★','✦','▼'];
+  for (let i = 0; i < 120; i++) {
+    const el = document.createElement('span');
+    const size = 8 + Math.random() * 14;
+    Object.assign(el.style, {
+      position: 'absolute',
+      left: `${Math.random()*100}%`,
+      top: '-30px',
+      color: cols[~~(Math.random()*cols.length)],
+      fontSize: `${size}px`,
+      animation: `cfFall ${2.5+Math.random()*3}s linear ${Math.random()*1.5}s forwards`,
+      pointerEvents: 'none',
+      opacity: '0.9'
+    });
+    el.textContent = shapes[~~(Math.random()*shapes.length)];
+    wrap.appendChild(el);
+  }
+  if (typeof SFX !== 'undefined') SFX.confettiPop();
+  setTimeout(() => { wrap.innerHTML = ''; }, 8000);
+}
+
+// ── PHASE FLASH ──
+function phaseFlash(icon, title, sub, color = 'var(--txt)') {
+  return new Promise(res => {
+    const el = document.getElementById('phase-flash');
+    document.getElementById('pf-icon').textContent = icon;
+    const titleEl = document.getElementById('pf-title');
+    titleEl.textContent = title;
+    titleEl.style.color = color;
+    document.getElementById('pf-sub').textContent = sub;
+    el.classList.add('show');
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(res, 200);
+    }, 1900);
+  });
+}
+
+// ── ROUTER ──
+const App = (() => {
+  const SCREENS = ['home','difficulty','create','join','howto','lobby','coding','voting','results'];
+  let cur = 'home';
+
+  function goto(name, opts = {}) {
+    if (!SCREENS.includes(name)) return;
+    const prev = document.getElementById(`s-${cur}`);
+    if (prev) prev.classList.remove('active');
+    cur = name;
+    const next = document.getElementById(`s-${name}`);
+    if (next) next.classList.add('active');
+    window.scrollTo(0, 0);
+    if (typeof SFX !== 'undefined') SFX.nav();
+    if (name === 'lobby') GM.renderLobby?.();
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && ['create','join','howto','difficulty'].includes(cur)) goto('home');
+    if ((e.ctrlKey||e.metaKey) && e.key === 'Enter' && cur === 'coding' && !GM?.state?.submitted) GM?.submit();
+    if (e.key === 'm' && e.ctrlKey) {
+      const m = SFX?.toggleMute();
+      Toast.info(m ? '🔇 Muted' : '🔊 Sound on');
+    }
+  });
+
+  // Tab in editor
+  document.addEventListener('DOMContentLoaded', () => {
+    const ed = document.getElementById('code-editor');
+    if (!ed) return;
+    ed.addEventListener('keydown', e => {
+      if (typeof SFX !== 'undefined') SFX.keystroke();
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const s = ed.selectionStart, en = ed.selectionEnd;
+        ed.value = ed.value.slice(0,s) + '  ' + ed.value.slice(en);
+        ed.selectionStart = ed.selectionEnd = s + 2;
+        GM?.onEdit?.();
+      }
+    });
+    ed.addEventListener('scroll', () => {
+      const ln = document.getElementById('line-nums');
+      if (ln) ln.scrollTop = ed.scrollTop;
+    });
+
+    // Unlock audio on first interaction
+    document.body.addEventListener('click', () => SFX?.unlock(), { once: true });
+    document.body.addEventListener('keydown', () => SFX?.unlock(), { once: true });
+  // Load live AWS data on page load
+  GlobalStats.fetch_and_render();
+  GlobalLB.render('glb-home-list');
+  });
+
+  return { goto, current: () => cur };
+})();
+
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CodeSPY — CHALLENGE BANK
+//  4 tiers: Rookie (no coding needed), Apprentice, Agent, Elite
+// ═══════════════════════════════════════════════════════════
+
+const CHALLENGE_TIERS = {
+  rookie: {
+    label: 'ROOKIE',
+    desc: 'No coding experience needed — pure logic!',
+    icon: '🌱',
+    color: '#39ff8a',
+    colorVar: '--grn',
+    time: 150, // 2:30
+    scoreBonus: 50,
+  },
+  apprentice: {
+    label: 'APPRENTICE',
+    desc: 'Light coding — basic loops & conditions.',
+    icon: '⚡',
+    color: '#00cfff',
+    colorVar: '--cyn',
+    time: 180, // 3:00
+    scoreBonus: 100,
+  },
+  agent: {
+    label: 'AGENT',
+    desc: 'Real programming — data structures & algorithms.',
+    icon: '🔥',
+    color: '#ffc940',
+    colorVar: '--gld',
+    time: 240, // 4:00
+    scoreBonus: 150,
+  },
+  elite: {
+    label: 'ELITE',
+    desc: 'Expert level — complex algorithms & optimization.',
+    icon: '💀',
+    color: '#ff3b5c',
+    colorVar: '--red',
+    time: 300, // 5:00
+    scoreBonus: 200,
+  }
+};
+
+const CHALLENGES = {
+
+  // ══════════════════════════════════
+  //  ROOKIE — Pure logic, no code needed
+  // ══════════════════════════════════
+  rookie: [
+    {
+      id: 'r1',
+      title: 'FizzBuzz Classic',
+      desc: 'Write the output for numbers 1–15. Replace multiples of 3 with "Fizz", multiples of 5 with "Buzz", and multiples of both with "FizzBuzz". Just write the sequence!',
+      task: 'Write the 15-number FizzBuzz sequence (one per line or space-separated)',
+      example_input: 'Numbers 1 to 15',
+      example_output: '1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz',
+      hint: 'You don\'t need to write code — just write the actual answers! 3=Fizz, 5=Buzz, 15=FizzBuzz',
+      language: 'plaintext'
+    },
+    {
+      id: 'r2',
+      title: 'Secret Cipher',
+      desc: 'Decode a message using ROT13 (shift each letter by 13). A→N, B→O, Z→M. Numbers and spaces stay the same.',
+      task: 'Decode: "PBQRFCL VF SHA" using ROT13',
+      example_input: '"URYYB JBEYQ"',
+      example_output: '"HELLO WORLD"',
+      hint: 'A=1, shift by 13 positions. A→N, B→O, N→A, Z→M',
+      language: 'plaintext'
+    },
+    {
+      id: 'r3',
+      title: 'Pattern Builder',
+      desc: 'Draw a triangle of stars. First row has 1 star, second has 2, third has 3, up to 5 rows. Just write it out!',
+      task: 'Draw a 5-row star triangle',
+      example_input: 'N = 5 rows',
+      example_output: '*\n**\n***\n****\n*****',
+      hint: 'Row 1 = 1 star, Row 2 = 2 stars... just type the pattern!',
+      language: 'plaintext'
+    },
+    {
+      id: 'r4',
+      title: 'Number Sequence',
+      desc: 'Write the first 10 Fibonacci numbers. Each number is the sum of the two before it. Start: 0, 1...',
+      task: 'List the first 10 Fibonacci numbers',
+      example_input: 'Start: 0, 1',
+      example_output: '0 1 1 2 3 5 8 13 21 34',
+      hint: '0+1=1, 1+1=2, 1+2=3, 2+3=5...',
+      language: 'plaintext'
+    },
+    {
+      id: 'r5',
+      title: 'Word Reversal',
+      desc: 'Reverse the order of words in the sentence. Don\'t reverse the letters, just the word positions.',
+      task: 'Reverse words in: "The quick brown fox jumps"',
+      example_input: '"Hello World Python"',
+      example_output: '"Python World Hello"',
+      hint: 'Split into words, reverse the list of words',
+      language: 'plaintext'
+    },
+  ],
+
+  // ══════════════════════════════════
+  //  APPRENTICE — Basic coding
+  // ══════════════════════════════════
+  apprentice: [
+    {
+      id: 'a1',
+      title: 'Sum of Digits',
+      desc: 'Given a positive integer, return the sum of all its digits.',
+      task: 'Write a function sum_digits(n) that returns the sum of digits of n.',
+      example_input: 'n = 12345',
+      example_output: '15 (1+2+3+4+5)',
+      hint: 'You can convert to string and loop, or use math (%10 gives last digit)',
+      language: 'python'
+    },
+    {
+      id: 'a2',
+      title: 'Count Vowels',
+      desc: 'Count how many vowels (a, e, i, o, u) are in a string. Case insensitive.',
+      task: 'Write count_vowels(s) that returns the count of vowel characters.',
+      example_input: '"Hello World"',
+      example_output: '3',
+      hint: 'Loop through each character, check if it\'s in "aeiou"',
+      language: 'python'
+    },
+    {
+      id: 'a3',
+      title: 'Temperature Converter',
+      desc: 'Convert Celsius to Fahrenheit. Formula: F = (C × 9/5) + 32',
+      task: 'Write celsius_to_fahrenheit(c) that converts temperature.',
+      example_input: 'c = 0',
+      example_output: '32.0',
+      hint: 'Apply the formula: multiply by 9, divide by 5, add 32',
+      language: 'python'
+    },
+    {
+      id: 'a4',
+      title: 'Even or Odd',
+      desc: 'Given a list of numbers, return a new list with "Even" or "Odd" for each number.',
+      task: 'Write classify_numbers(nums) that returns list of "Even"/"Odd" strings.',
+      example_input: '[1, 2, 3, 4, 5]',
+      example_output: '["Odd","Even","Odd","Even","Odd"]',
+      hint: 'Use modulo (%) operator: n%2==0 means even',
+      language: 'python'
+    },
+    {
+      id: 'a5',
+      title: 'Longest Word',
+      desc: 'Find the longest word in a sentence. If tie, return the first one.',
+      task: 'Write longest_word(sentence) that returns the longest word string.',
+      example_input: '"The quick brown fox"',
+      example_output: '"quick"',
+      hint: 'Split sentence into words, find the one with max length',
+      language: 'python'
+    },
+    {
+      id: 'a6',
+      title: 'Reverse String',
+      desc: 'Return a string reversed without using any built-in reverse function.',
+      task: 'Write reverse_string(s) using a loop or slicing.',
+      example_input: '"hello"',
+      example_output: '"olleh"',
+      hint: 'Loop backwards, build new string. Or use slicing: s[::-1]',
+      language: 'python'
+    },
+  ],
+
+  // ══════════════════════════════════
+  //  AGENT — Real DSA problems
+  // ══════════════════════════════════
+  agent: [
+    {
+      id: 'ag1',
+      title: 'Two Sum',
+      desc: 'Given an integer array and a target, return indices of the two numbers that add up to target. Each input has exactly one solution.',
+      task: 'Write two_sum(nums, target) → list of two indices.',
+      example_input: 'nums=[2,7,11,15], target=9',
+      example_output: '[0, 1]',
+      hint: 'Hash map approach: store seen values and their indices',
+      language: 'python'
+    },
+    {
+      id: 'ag2',
+      title: 'Valid Parentheses',
+      desc: 'Given a string of brackets, determine if it is valid. Every opened bracket must be closed in the correct order.',
+      task: 'Write is_valid(s) → bool.',
+      example_input: '"({[]})"',
+      example_output: 'True',
+      hint: 'Use a stack. Push opening brackets, pop for closing ones.',
+      language: 'python'
+    },
+    {
+      id: 'ag3',
+      title: 'Maximum Subarray',
+      desc: "Find the contiguous subarray within an array that has the largest sum. This is Kadane's Algorithm.",
+      task: 'Write max_subarray(nums) → int (the max sum).',
+      example_input: '[-2,1,-3,4,-1,2,1,-5,4]',
+      example_output: '6 (subarray [4,-1,2,1])',
+      hint: 'Track current sum and max sum. Reset current when it goes negative.',
+      language: 'python'
+    },
+    {
+      id: 'ag4',
+      title: 'Binary Search',
+      desc: 'Implement binary search on a sorted array. Return the index of target, or -1 if not found. Must be O(log n).',
+      task: 'Write binary_search(nums, target) → int index.',
+      example_input: 'nums=[1,3,5,7,9,11], target=7',
+      example_output: '3',
+      hint: 'Maintain left/right pointers, check midpoint each iteration.',
+      language: 'python'
+    },
+    {
+      id: 'ag5',
+      title: 'Palindrome Check',
+      desc: 'Return True if a string is a palindrome. Ignore spaces, punctuation, and case.',
+      task: 'Write is_palindrome(s) → bool.',
+      example_input: '"A man, a plan, a canal: Panama"',
+      example_output: 'True',
+      hint: 'Clean string first (keep alphanumeric, lowercase), then two pointers.',
+      language: 'python'
+    },
+    {
+      id: 'ag6',
+      title: 'Roman Numerals',
+      desc: 'Convert an integer (1–3999) to its Roman numeral representation.',
+      task: 'Write int_to_roman(num) → string.',
+      example_input: 'num = 1994',
+      example_output: '"MCMXCIV"',
+      hint: 'Greedy: use a lookup table from largest to smallest value.',
+      language: 'python'
+    },
+  ],
+
+  // ══════════════════════════════════
+  //  ELITE — Complex problems
+  // ══════════════════════════════════
+  elite: [
+    {
+      id: 'e1',
+      title: 'Count Islands',
+      desc: "Given a 2D grid of '1's (land) and '0's (water), count the number of distinct islands. An island is surrounded by water and formed by connecting adjacent land.",
+      task: "Write num_islands(grid) → int. Grid is List[List[str]].",
+      example_input: '[["1","1","0"],["0","1","0"],["0","0","1"]]',
+      example_output: '2',
+      hint: 'DFS/BFS: when you find a "1", flood-fill it to "0" and count it as one island.',
+      language: 'python'
+    },
+    {
+      id: 'e2',
+      title: 'LRU Cache',
+      desc: 'Design a Least Recently Used cache. It should support get and put operations in O(1) time.',
+      task: 'Implement LRUCache class with __init__(capacity), get(key), put(key, value).',
+      example_input: 'capacity=2, put(1,1), put(2,2), get(1)→1, put(3,3), get(2)→-1',
+      example_output: 'Class implementation',
+      hint: 'Use OrderedDict or a combination of dict + doubly linked list.',
+      language: 'python'
+    },
+    {
+      id: 'e3',
+      title: 'Longest Palindromic Substring',
+      desc: 'Given a string, return the longest palindromic substring. If multiple answers exist, return any one.',
+      task: 'Write longest_palindrome(s) → string.',
+      example_input: '"babad"',
+      example_output: '"bab" or "aba"',
+      hint: 'Expand Around Center: for each char, expand outward checking palindrome.',
+      language: 'python'
+    },
+    {
+      id: 'e4',
+      title: 'Word Break',
+      desc: 'Given a string s and a dictionary of words, return True if s can be segmented into a space-separated sequence of dictionary words.',
+      task: 'Write word_break(s, wordDict) → bool.',
+      example_input: 's="leetcode", wordDict=["leet","code"]',
+      example_output: 'True',
+      hint: 'Dynamic programming: dp[i] = True if s[:i] can be broken into dict words.',
+      language: 'python'
+    },
+    {
+      id: 'e5',
+      title: 'Merge K Sorted Lists',
+      desc: 'Merge k sorted linked lists and return it as one sorted list.',
+      task: 'Write merge_k_lists(lists) where lists is List[Optional[ListNode]].',
+      example_input: '[[1,4,5],[1,3,4],[2,6]]',
+      example_output: '[1,1,2,3,4,4,5,6]',
+      hint: 'Use a min-heap (heapq). Push first element of each list, pop and push next.',
+      language: 'python'
+    },
+    {
+      id: 'e6',
+      title: 'Trapping Rain Water',
+      desc: 'Given n non-negative integers representing an elevation map, compute how much water it can trap after raining.',
+      task: 'Write trap(height) → int.',
+      example_input: '[0,1,0,2,1,0,1,3,2,1,2,1]',
+      example_output: '6',
+      hint: 'Two pointers from both ends. Track max_left and max_right.',
+      language: 'python'
+    },
+  ]
+};
+
+// Get random challenge for a given tier
+function getChallenge(tier = 'agent') {
+  const list = CHALLENGES[tier] || CHALLENGES.agent;
+  return { ...list[~~(Math.random() * list.length)], tier };
+}
+
+// Get tier config
+function getTierConfig(tier) {
+  return CHALLENGE_TIERS[tier] || CHALLENGE_TIERS.agent;
+}
+
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CodeSPY — AI CODE ENGINE
+//
+//  The AI is no longer OBVIOUS. It:
+//  - Makes subtle syntax errors sometimes
+//  - Forgets edge cases occasionally  
+//  - Uses slightly-off variable names
+//  - Mixes styles inconsistently
+//  - Sometimes over-documents, sometimes under-documents
+//  - Difficulty scales: harder tiers = smarter AI, easier = more mistakes
+// ═══════════════════════════════════════════════════════════
+
+// ── PERFECT AI SOLUTIONS (base) ──
+const AI_PERFECT = {
+  // ROOKIE
+  r1: `1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz`,
+  r2: `CODESPY IS FUN`,
+  r3: `*\n**\n***\n****\n*****`,
+  r4: `0 1 1 2 3 5 8 13 21 34`,
+  r5: `jumps fox brown quick The`,
+
+  // APPRENTICE
+  a1: `def sum_digits(n: int) -> int:
+    """Sum all digits of n. Time: O(log n)"""
+    return sum(int(d) for d in str(abs(n)))`,
+
+  a2: `def count_vowels(s: str) -> int:
+    """Count vowels (case insensitive). Time: O(n)"""
+    return sum(1 for c in s.lower() if c in 'aeiou')`,
+
+  a3: `def celsius_to_fahrenheit(c: float) -> float:
+    """Convert Celsius to Fahrenheit using standard formula."""
+    return (c * 9 / 5) + 32`,
+
+  a4: `def classify_numbers(nums: list[int]) -> list[str]:
+    """Classify each number as Even or Odd."""
+    return ["Even" if n % 2 == 0 else "Odd" for n in nums]`,
+
+  a5: `def longest_word(sentence: str) -> str:
+    """Return longest word; first if tie. Time: O(n)"""
+    words = sentence.split()
+    return max(words, key=len) if words else ""`,
+
+  a6: `def reverse_string(s: str) -> str:
+    """Reverse string iteratively without built-ins."""
+    result = ""
+    for i in range(len(s) - 1, -1, -1):
+        result += s[i]
+    return result`,
+
+  // AGENT
+  ag1: `def two_sum(nums: list[int], target: int) -> list[int]:
+    """Hash map O(n) solution."""
+    seen: dict[int, int] = {}
+    for i, num in enumerate(nums):
+        complement = target - num
+        if complement in seen:
+            return [seen[complement], i]
+        seen[num] = i
+    return []`,
+
+  ag2: `def is_valid(s: str) -> bool:
+    """Stack-based bracket validation. Time: O(n)"""
+    stack: list[str] = []
+    mapping: dict[str, str] = {')': '(', '}': '{', ']': '['}
+    for char in s:
+        if char in mapping:
+            if not stack or mapping[char] != stack.pop():
+                return False
+        else:
+            stack.append(char)
+    return not stack`,
+
+  ag3: `def max_subarray(nums: list[int]) -> int:
+    """Kadane's Algorithm. Time: O(n), Space: O(1)"""
+    max_sum = current_sum = nums[0]
+    for num in nums[1:]:
+        current_sum = max(num, current_sum + num)
+        max_sum = max(max_sum, current_sum)
+    return max_sum`,
+
+  ag4: `def binary_search(nums: list[int], target: int) -> int:
+    """Standard binary search. Time: O(log n)"""
+    left, right = 0, len(nums) - 1
+    while left <= right:
+        mid = left + (right - left) // 2
+        if nums[mid] == target:
+            return mid
+        elif nums[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1`,
+
+  ag5: `def is_palindrome(s: str) -> bool:
+    """Two-pointer palindrome check. Time: O(n)"""
+    cleaned = ''.join(c.lower() for c in s if c.isalnum())
+    left, right = 0, len(cleaned) - 1
+    while left < right:
+        if cleaned[left] != cleaned[right]:
+            return False
+        left += 1
+        right -= 1
+    return True`,
+
+  ag6: `def int_to_roman(num: int) -> str:
+    """Greedy approach with value-symbol lookup table."""
+    val_sym = [
+        (1000,'M'),(900,'CM'),(500,'D'),(400,'CD'),
+        (100,'C'),(90,'XC'),(50,'L'),(40,'XL'),
+        (10,'X'),(9,'IX'),(5,'V'),(4,'IV'),(1,'I')
+    ]
+    result = ''
+    for value, symbol in val_sym:
+        while num >= value:
+            result += symbol
+            num -= value
+    return result`,
+
+  // ELITE
+  e1: `def num_islands(grid: list[list[str]]) -> int:
+    """DFS flood-fill. Time: O(m*n)"""
+    def dfs(r: int, c: int) -> None:
+        if not (0 <= r < len(grid) and 0 <= c < len(grid[0])):
+            return
+        if grid[r][c] != '1':
+            return
+        grid[r][c] = '0'
+        for dr, dc in [(0,1),(0,-1),(1,0),(-1,0)]:
+            dfs(r + dr, c + dc)
+    count = 0
+    for r in range(len(grid)):
+        for c in range(len(grid[0])):
+            if grid[r][c] == '1':
+                dfs(r, c)
+                count += 1
+    return count`,
+
+  e2: `from collections import OrderedDict
+
+class LRUCache:
+    """O(1) get/put using OrderedDict."""
+    def __init__(self, capacity: int) -> None:
+        self.cache: OrderedDict[int, int] = OrderedDict()
+        self.capacity = capacity
+
+    def get(self, key: int) -> int:
+        if key not in self.cache:
+            return -1
+        self.cache.move_to_end(key)
+        return self.cache[key]
+
+    def put(self, key: int, value: int) -> None:
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.capacity:
+            self.cache.popitem(last=False)`,
+
+  e3: `def longest_palindrome(s: str) -> str:
+    """Expand around center. Time: O(n²), Space: O(1)"""
+    def expand(l: int, r: int) -> str:
+        while l >= 0 and r < len(s) and s[l] == s[r]:
+            l -= 1
+            r += 1
+        return s[l + 1:r]
+    result = ""
+    for i in range(len(s)):
+        for sub in [expand(i, i), expand(i, i + 1)]:
+            if len(sub) > len(result):
+                result = sub
+    return result`,
+
+  e4: `def word_break(s: str, wordDict: list[str]) -> bool:
+    """DP solution. Time: O(n²), Space: O(n)"""
+    word_set = set(wordDict)
+    dp = [False] * (len(s) + 1)
+    dp[0] = True
+    for i in range(1, len(s) + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    return dp[len(s)]`,
+
+  e5: `import heapq
+from typing import Optional
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def merge_k_lists(lists: list[Optional[ListNode]]) -> Optional[ListNode]:
+    """Min-heap merge. Time: O(n log k)"""
+    heap = []
+    for i, node in enumerate(lists):
+        if node:
+            heapq.heappush(heap, (node.val, i, node))
+    dummy = ListNode(0)
+    current = dummy
+    while heap:
+        val, i, node = heapq.heappop(heap)
+        current.next = node
+        current = current.next
+        if node.next:
+            heapq.heappush(heap, (node.next.val, i, node.next))
+    return dummy.next`,
+
+  e6: `def trap(height: list[int]) -> int:
+    """Two-pointer approach. Time: O(n), Space: O(1)"""
+    left, right = 0, len(height) - 1
+    max_left = max_right = water = 0
+    while left < right:
+        if height[left] < height[right]:
+            if height[left] >= max_left:
+                max_left = height[left]
+            else:
+                water += max_left - height[left]
+            left += 1
+        else:
+            if height[right] >= max_right:
+                max_right = height[right]
+            else:
+                water += max_right - height[right]
+            right -= 1
+    return water`
+};
+
+// ── HUMAN CODE VARIANTS ──
+const HUMAN_CODE_VARIANTS = [
+  // casual, slightly messy but correct
+  `def fizzbuzz(n):
+    res = []
+    for i in range(1, n+1):
+        if i%15 == 0: res.append("FizzBuzz")
+        elif i%3 == 0: res.append("Fizz")
+        elif i%5 == 0: res.append("Buzz")
+        else: res.append(str(i))
+    print(" ".join(res))`,
+
+  `def palindrome(s):
+    # strip and lowercase
+    s = ''.join(c for c in s.lower() if c.isalnum())
+    return s == s[::-1]`,
+
+  `def twoSum(nums, target):
+    d = {}
+    for i, x in enumerate(nums):
+        if target-x in d:
+            return [d[target-x], i]
+        d[x] = i`,
+
+  `def maxSub(arr):
+    best = cur = arr[0]
+    for n in arr[1:]:
+        cur = max(n, cur+n)
+        best = max(best, cur)
+    return best`,
+
+  `# fibonacci iterative
+def fib(n):
+    if n < 2: return n
+    a, b = 0, 1
+    for _ in range(n-1):
+        a, b = b, a+b
+    return b`,
+
+  `def isValid(s):
+    stack = []
+    pairs = {')':'(', ']':'[', '}':'{'}
+    for ch in s:
+        if ch in '([{':
+            stack.append(ch)
+        elif not stack or stack[-1] != pairs[ch]:
+            return False
+        else:
+            stack.pop()
+    return len(stack) == 0`,
+
+  `def count_vowels(s):
+    count = 0
+    for c in s.lower():
+        if c in 'aeiouAEIOU':
+            count += 1
+    return count`,
+
+  `def binary_search(arr, target):
+    lo, hi = 0, len(arr)-1
+    while lo <= hi:
+        mid = (lo+hi)//2
+        if arr[mid] == target: return mid
+        if arr[mid] < target: lo = mid+1
+        else: hi = mid-1
+    return -1`
+];
+
+// ── AI MUTATION ENGINE ──
+// Makes the AI look more human by injecting realistic imperfections
+
+const MUTATIONS = {
+  // Rookie/Apprentice: frequent small errors
+  rookie: [
+    (code) => code, // no change sometimes
+    (code) => code.replace('return', 'return '), // extra space
+    (code) => code + '\n# done',
+    (code) => code.replace('def ', 'def  '), // double space
+  ],
+
+  apprentice: [
+    (code) => code, // clean
+    (code) => code.replace('"""', '#'), // wrong docstring style
+    (code) => code.replace(': int', '').replace(': str', '').replace(': float', ''), // remove type hints
+    (code) => code.replace('    ', '  '), // 2-space instead of 4
+    (code) => code + '\n    # edge case: empty input not handled',
+  ],
+
+  agent: [
+    (code) => code, // perfect
+    (code) => code, // perfect again (agent AI is usually good)
+    (code) => code.replace(/: list\[int\]/g, '').replace(/: dict\[int, int\]/g, ''), // remove some type hints
+    (code) => code.replace('"""', '# ').replace('"""', ''), // botched docstring
+    (code) => {
+      // Add a slightly wrong comment
+      return code.replace('# ', '# NOTE: ');
+    },
+  ],
+
+  elite: [
+    (code) => code, // elite AI is nearly perfect
+    (code) => code, // perfect
+    (code) => code, // perfect
+    (code) => code.replace('Optional[', '').replace(']', ''), // slight import issue
+    (code) => code + '\n    # TODO: optimize further',
+  ]
+};
+
+/**
+ * Get AI-generated code for a challenge, with realistic imperfections
+ * based on the difficulty tier.
+ *
+ * @param {string} challengeId - e.g. 'ag1', 'r3', 'e2'
+ * @param {string} tier - 'rookie'|'apprentice'|'agent'|'elite'
+ * @returns {string} AI-generated code
+ */
+function getAICode(challengeId, tier = 'agent') {
+  const base = AI_PERFECT[challengeId] || AI_PERFECT['ag1'];
+  const mutations = MUTATIONS[tier] || MUTATIONS.agent;
+
+  // Roll for mutation: higher tiers = less likely to mutate
+  const mutationChance = { rookie: 0.65, apprentice: 0.5, agent: 0.3, elite: 0.15 };
+  const chance = mutationChance[tier] || 0.3;
+
+  if (Math.random() < chance) {
+    const mutator = mutations[~~(Math.random() * mutations.length)];
+    return mutator(base);
+  }
+
+  return base;
+}
+
+/**
+ * Get human-style code (for bot players)
+ */
+function getHumanCode() {
+  return HUMAN_CODE_VARIANTS[~~(Math.random() * HUMAN_CODE_VARIANTS.length)];
+}
+
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CodeSPY — GAME MANAGER
+//  Handles all game state, phases, timers, bots, scoring
+// ═══════════════════════════════════════════════════════════
+
+const GM = (() => {
+  let S = _reset();
+
+  const BOT_NAMES = [
+    'ByteBot','NullPtr','PixelAI','VoidCore','CipherX',
+    'DataBot','AlphaX','BetaByte','HexDev','OctalFox'
+  ];
+
+  function _reset() {
+    return {
+      roomCode: null,
+      myId: null,
+      myName: null,
+      players: [],
+      challenge: null,
+      tier: 'agent',           // selected difficulty tier
+      submissions: [],
+      votes: {},
+      scores: {},
+      submitted: false,
+      voted: false,
+      round: 1,
+      myVote: null,
+      timerInterval: null,
+      timer: 180,
+      timerFull: 180,
+      tickSoundFired30: false,
+      tickSoundFired10: false,
+    };
+  }
+
+  // ─── DIFFICULTY SELECTION ───
+  function selectDifficulty(tier) {
+    S.tier = tier;
+    const cfg = getTierConfig(tier);
+    document.getElementById('selected-tier-display')?.setAttribute('data-tier', tier);
+    App.goto('create');
+    Toast.info(`${cfg.icon} ${cfg.label} tier selected!`);
+  }
+
+  // ─── ROOM CREATION ───
+  function createRoom() {
+    const n = (document.getElementById('create-name').value.trim() || H.randomName()).slice(0,20);
+    S.roomCode = H.roomCode();
+    S.myId = 'me_' + Date.now();
+    S.myName = n;
+    S.players = [{ id: S.myId, name: n, avatar: H.randomAv(), score: 0, isHost: true, isBot: false }];
+    S.scores[S.myId] = 0;
+
+    document.getElementById('code-display-text').textContent = S.roomCode;
+    document.getElementById('lby-code').textContent = S.roomCode;
+    document.getElementById('room-code-reveal').classList.remove('hidden');
+    SFX.success();
+    Toast.success('✓ Room created!');
+
+    // Bots join with realistic delays
+    setTimeout(() => _addBots(2 + ~~(Math.random()*3)), 1600);
+
+    // 🔶 AWS HOOK: In production, call API Gateway → Lambda to register room in DynamoDB
+    // AWS.createRoom(S.roomCode, S.myId, S.tier).then(...)
+  }
+
+  function joinRoom() {
+    const n = (document.getElementById('join-name').value.trim() || H.randomName()).slice(0,20);
+    const c = document.getElementById('join-code').value.trim().toUpperCase();
+    const err = document.getElementById('join-err');
+    err.classList.add('hidden');
+
+    if (c.length !== 6) {
+      err.textContent = 'Room code must be 6 characters';
+      err.classList.remove('hidden');
+      SFX.error();
+      return;
+    }
+
+    S.roomCode = c;
+    S.myId = 'me_' + Date.now();
+    S.myName = n;
+    S.players = [{ id: S.myId, name: n, avatar: H.randomAv(), score: 0, isHost: false, isBot: false }];
+    S.scores[S.myId] = 0;
+    _addBots(2 + ~~(Math.random()*3), true);
+    document.getElementById('lby-code').textContent = S.roomCode;
+    App.goto('lobby');
+    SFX.playerJoin();
+    Toast.info(`Joined room ${c}`);
+
+    // 🔶 AWS HOOK: In production, call API Gateway → Lambda to join room
+    // AWS.joinRoom(c, S.myId, n).then(...)
+  }
+
+  function _addBots(count, withToasts = false) {
+    const names = H.shuffle([...BOT_NAMES]);
+    for (let i = 0; i < Math.min(count, names.length); i++) {
+      const bot = {
+        id: 'bot_' + i + '_' + Date.now(),
+        name: names[i],
+        avatar: H.randomAv(),
+        score: 0,
+        isHost: false,
+        isBot: true
+      };
+      S.players.push(bot);
+      S.scores[bot.id] = 0;
+      if (withToasts) {
+        setTimeout(() => {
+          SFX.playerJoin();
+          Toast.info(`${bot.avatar} ${bot.name} joined`);
+        }, i * 700 + 300);
+      }
+    }
+    _renderLobby();
+  }
+
+  function copyCode() {
+    if (!S.roomCode) return;
+    H.copy(S.roomCode).then(ok => {
+      if (ok) { SFX.copy(); Toast.success('Copied!'); }
+      else Toast.error('Copy failed');
+    });
+  }
+
+  function leave() {
+    if (!confirm('Leave the mission?')) return;
+    clearInterval(S.timerInterval);
+    SFX.stopLobbyAmbient?.();
+    S = _reset();
+    App.goto('home');
+    Toast.info('Left game');
+  }
+
+  // ─── LOBBY ───
+  function _renderLobby() {
+    const grid = document.getElementById('players-grid');
+    const count = document.getElementById('lby-count');
+    const hint = document.getElementById('lby-hint');
+    const sub = document.getElementById('lby-sub');
+    const btn = document.getElementById('start-btn');
+    const rnd = document.getElementById('lobby-rnd');
+    const tierInfo = document.getElementById('lobby-tier-info');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    S.players.forEach((p, i) => {
+      const c = document.createElement('div');
+      c.className = 'p-card' + (p.isHost ? ' is-host' : '') + (p.id === S.myId ? ' is-me' : '');
+      c.style.animationDelay = `${i * 0.055}s`;
+      c.innerHTML = `
+        <span class="p-av">${p.avatar}</span>
+        <div class="p-name">${H.esc(p.name.slice(0,12))}</div>
+        ${p.isHost ? '<span class="p-role host">HOST</span>' : ''}
+        ${p.id === S.myId && !p.isHost ? '<span class="p-role me">YOU</span>' : ''}
+        <span class="p-score">${S.scores[p.id]||0} pts</span>`;
+      grid.appendChild(c);
+    });
+
+    count.textContent = `${S.players.length} / 20`;
+    if (rnd) rnd.textContent = `ROUND ${S.round}`;
+
+    // Show selected tier
+    const cfg = getTierConfig(S.tier);
+    if (tierInfo) {
+      tierInfo.innerHTML = `<span style="color:${cfg.color}">${cfg.icon} ${cfg.label}</span> · ${cfg.desc}`;
+    }
+
+    const ready = S.players.length >= 2;
+    btn.disabled = !ready;
+    hint.textContent = ready ? '✓ Ready — click LAUNCH MISSION' : 'Need at least 2 agents';
+    sub.textContent = ready ? `${S.players.length} agents online` : 'WAITING FOR AGENTS...';
+
+    SFX.startLobbyAmbient?.();
+  }
+
+  // ─── START GAME ───
+  async function startGame() {
+    if (S.players.length < 2) { SFX.error(); Toast.warn('Need at least 2 agents!'); return; }
+
+    SFX.stopLobbyAmbient?.();
+    S.challenge = getChallenge(S.tier);
+    S.submissions = [];
+    S.votes = {};
+    S.myVote = null;
+    S.submitted = false;
+    S.voted = false;
+    S.tickSoundFired30 = false;
+    S.tickSoundFired10 = false;
+
+    const cfg = getTierConfig(S.tier);
+    SFX.phaseCoding();
+
+    await phaseFlash('💻', 'CODING PHASE', `${cfg.icon} ${cfg.label} — ${H.fmtTime(cfg.time)} on the clock`, 'var(--cyn)');
+
+    _loadChallenge();
+    App.goto('coding');
+    _startTimer();
+    TypingUI.start(S.players);
+
+    // 🔶 AWS HOOK: In production, emit socket event to start round for all players
+    // AWS.startRound(S.roomCode, S.challenge.id, S.tier)
+  }
+
+  function _loadChallenge() {
+    const ch = S.challenge;
+    const cfg = getTierConfig(S.tier);
+
+    const diffEl = document.getElementById('ch-diff');
+    diffEl.textContent = cfg.label;
+    diffEl.className = `diff-badge d-${S.tier}`;
+    diffEl.style.setProperty('--tier-color', cfg.color);
+
+    document.getElementById('ch-title').textContent = ch.title;
+    document.getElementById('ch-desc').textContent = ch.desc;
+    document.getElementById('ch-task').textContent = ch.task;
+    document.getElementById('ch-input').textContent = ch.example_input;
+    document.getElementById('ch-output').textContent = ch.example_output;
+    document.getElementById('ch-hint').textContent = ch.hint || '';
+    document.getElementById('round-label').textContent = `ROUND ${S.round}`;
+
+    const ed = document.getElementById('code-editor');
+    ed.value = '';
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('sub-done-msg').classList.add('hidden');
+    document.getElementById('submit-btn').classList.remove('hidden');
+
+    const st = document.getElementById('editor-status');
+    st.className = 'ed-st ed-st-ready';
+    st.textContent = '● READY';
+
+    // Set language badge
+    const langBadge = document.getElementById('ed-lang');
+    if (langBadge) langBadge.textContent = S.tier === 'rookie' ? 'Text' : 'Python';
+
+    // Agent avatars
+    const avBox = document.getElementById('coding-avatars');
+    avBox.innerHTML = '';
+    S.players.forEach(p => {
+      const sp = document.createElement('div');
+      sp.className = 'ch-av'; sp.textContent = p.avatar; sp.title = p.name;
+      avBox.appendChild(sp);
+    });
+
+    _updateSubCount();
+    _updateLineNums();
+  }
+
+  // ─── TIMER ───
+  function _startTimer() {
+    clearInterval(S.timerInterval);
+    const cfg = getTierConfig(S.tier);
+    S.timer = S.timerFull = cfg.time;
+    _renderTimer();
+
+    S.timerInterval = setInterval(() => {
+      S.timer--;
+      _renderTimer();
+
+      // Sound cues
+      if (S.timer === 60) { SFX.timerTick(); Toast.warn('⏰ One minute left!'); }
+      if (S.timer === 30) { SFX.timerUrgent(); Toast.warn('⏰ 30 seconds!'); }
+      if (S.timer <= 10 && S.timer > 0) SFX.timerUrgent();
+
+      if (S.timer <= 0) {
+        clearInterval(S.timerInterval);
+        if (!S.submitted) {
+          const code = document.getElementById('code-editor').value.trim() || '# No submission — time ran out';
+          _addSub(S.myId, code, false);
+          SFX.warn?.();
+          Toast.warn('⏱ Time up — auto-submitted');
+        }
+        _finalise();
+      }
+    }, 1000);
+  }
+
+  function _renderTimer() {
+    const el = document.getElementById('timer-text');
+    const ring = document.getElementById('timer-ring-fg');
+    const wrap = document.getElementById('timer-wrap');
+    if (!el || !ring) return;
+
+    const pct = S.timer / S.timerFull;
+    const circ = 2 * Math.PI * 22;
+    ring.style.strokeDashoffset = circ * (1 - pct);
+    el.textContent = H.fmtTime(S.timer);
+
+    if (S.timer > 60) {
+      el.className = 'timer-num tn-ok';
+      ring.className = 'tr-fg';
+      wrap?.classList.remove('timer-urgent','timer-warn');
+    } else if (S.timer > 30) {
+      el.className = 'timer-num tn-warn';
+      ring.className = 'tr-fg warn';
+      wrap?.classList.add('timer-warn');
+      wrap?.classList.remove('timer-urgent');
+    } else {
+      el.className = 'timer-num tn-danger';
+      ring.className = 'tr-fg danger';
+      wrap?.classList.add('timer-urgent');
+      wrap?.classList.remove('timer-warn');
+    }
+  }
+
+  // ─── EDITOR ───
+  function onEdit() {
+    const val = document.getElementById('code-editor').value;
+    document.getElementById('submit-btn').disabled = val.trim().length === 0;
+    const st = document.getElementById('editor-status');
+    st.className = 'ed-st ed-st-typing';
+    st.textContent = '● EDITING';
+    _updateLineNums();
+    TypingUI.setActive(S.myId, val.trim().length > 0);
+  }
+
+  function _updateLineNums() {
+    const ta = document.getElementById('code-editor');
+    const ln = document.getElementById('line-nums');
+    const lc = document.getElementById('line-count');
+    if (!ta || !ln) return;
+    const lines = ta.value.split('\n').length;
+    ln.textContent = Array.from({length: lines}, (_, i) => i+1).join('\n');
+    if (lc) lc.textContent = `${lines} line${lines !== 1 ? 's' : ''}`;
+  }
+
+  // ─── SUBMISSION ───
+  function submit() {
+    const code = document.getElementById('code-editor').value.trim();
+    if (!code || S.submitted) return;
+
+    S.submitted = true;
+    _addSub(S.myId, code, false);
+
+    document.getElementById('submit-btn').classList.add('hidden');
+    document.getElementById('sub-done-msg').classList.remove('hidden');
+    const st = document.getElementById('editor-status');
+    st.className = 'ed-st ed-st-done';
+    st.textContent = '● SUBMITTED';
+
+    SFX.success();
+    Toast.success('✓ Code submitted!');
+    _updateSubCount();
+    _botSubmit();
+
+    // 🔶 AWS HOOK: In production, send submission to API Gateway → Lambda → DynamoDB
+    // AWS.submitCode(S.roomCode, S.myId, code, S.challenge.id)
+  }
+
+  function _addSub(pid, code, isAI) {
+    S.submissions.push({ id: 'sub_' + pid + '_' + Date.now(), pid, code, isAI });
+    _updateSubCount();
+  }
+
+  function _updateSubCount() {
+    const el = document.getElementById('sub-count-txt');
+    if (el) el.textContent = `${S.submissions.filter(s => !s.isAI).length}/${S.players.length}`;
+  }
+
+  function _botSubmit() {
+    const bots = S.players.filter(p => p.isBot);
+    bots.forEach((bot, i) => {
+      setTimeout(() => {
+        _addSub(bot.id, getHumanCode(), false);
+        Toast.info(`${bot.avatar} ${bot.name} submitted`);
+        if (S.submissions.filter(s => !s.isAI).length >= S.players.length)
+          setTimeout(_finalise, 500);
+      }, 3000 + i * 1800 + Math.random() * 2000);
+    });
+
+    // AI injects via Bedrock — real AI-generated code every round
+    const aiDelay = 5000 + Math.random() * 4000;
+    setTimeout(async () => {
+      // Show Bedrock loading indicator
+      const bStatus = document.getElementById('bedrock-status');
+      // Get AI code from Bedrock (falls back to local if AWS not configured)
+      const aiResult = await BedrockAI.generate(S.challenge, S.tier);
+      if (aiResult.source === 'bedrock') {
+        console.log('🤖 Using real Bedrock AI code');
+        Toast.info('🤖 AI Agent submitted via AWS Bedrock');
+      }
+      _addSub('ai_agent', aiResult.code, true);
+      _updateSubCount();
+      if (bStatus) bStatus.innerHTML = '';
+    }, aiDelay);
+  }
+
+  // ─── VOTING ───
+  async function _finalise() {
+    clearInterval(S.timerInterval);
+    if (!S.submissions.find(s => s.isAI))
+      _addSub('ai_agent', getAICode(S.challenge.id, S.tier), true);
+
+    S.submissions = H.shuffle(S.submissions);
+    SFX.phaseVoting();
+
+    await phaseFlash('🕵️', 'SPY PHASE', 'Find the AI impostor among the submissions', 'var(--red)');
+    _renderVoting();
+    App.goto('voting');
+    TypingUI.stop();
+    Voice.say('voting');
+    setTimeout(() => AccChat.open(S.players, _startHeatmap), 400);
+  }
+
+  function _renderVoting() {
+    const grid = document.getElementById('subs-grid');
+    grid.innerHTML = '';
+    document.getElementById('vote-tally').textContent = `0 / ${S.players.length} votes cast`;
+
+    S.submissions.forEach((sub, idx) => {
+      const card = document.createElement('div');
+      card.className = 'sub-card';
+      card.dataset.sid = sub.id;
+      card.style.animationDelay = `${idx * 0.09}s`;
+      card.innerHTML = `
+        <div class="sub-hdr">
+          <span class="sub-num">SUBMISSION #${idx+1}</span>
+          <button class="vote-btn" data-sid="${H.esc(sub.id)}" onclick="GM.vote('${H.esc(sub.id)}',GM._getBet('${H.esc(sub.id)}'))">🗳 VOTE AI</button>
+        </div>
+        <div class="sub-heat-bar"><div class="sub-heat-fill" id="heat_${H.esc(sub.id)}" style="width:0%"></div></div>
+        <pre class="sub-code-view">${syntaxHighlight(sub.code)}</pre>
+        <div class="react-bar">
+          ${['😱','🔥','🤔','👀','💀','😂'].map(e=>`<button class="react-btn" onclick="Reactions.float('${e}')">${e}</button>`).join('')}
+        </div>
+        <div class="sub-bet-row">
+          <span class="bet-lbl">BET:</span>
+          <button class="bet-btn active" data-bet="1" onclick="GM._setBet('${H.esc(sub.id)}',1,this)">1x</button>
+          <button class="bet-btn"        data-bet="2" onclick="GM._setBet('${H.esc(sub.id)}',2,this)">2x</button>
+          <button class="bet-btn"        data-bet="3" onclick="GM._setBet('${H.esc(sub.id)}',3,this)">3x</button>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  S._bets = {};
+  function _setBet(sid, val, btn) {
+    S._bets[sid] = val;
+    document.querySelectorAll('.bet-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    SFX.click?.();
+  }
+  function _getBet(sid) { return S._bets?.[sid] || 1; }
+
+  function vote(sid, bet) {
+    if (S.voted) return;
+    bet = bet || 1;
+    S.voted = true;
+    S.myVote = sid;
+    S._myBet = bet;
+    S.votes[S.myId] = sid;
+
+    document.querySelectorAll('.sub-card').forEach(c => {
+      c.classList.add('locked');
+      if (c.dataset.sid === sid) c.classList.add('selected');
+    });
+    document.querySelectorAll('.vote-btn').forEach(b => {
+      b.disabled = true;
+      if (b.dataset.sid === sid) b.classList.add('voted');
+    });
+
+    SFX.vote();
+    Toast.info('🗳 Vote cast!');
+    _updateVoteTally();
+    setTimeout(_botVote, 800 + Math.random()*1500);
+
+    // 🔶 AWS HOOK: AWS.castVote(S.roomCode, S.myId, sid)
+  }
+
+  function _updateVoteTally() {
+    const el = document.getElementById('vote-tally');
+    if (el) el.textContent = `${Object.keys(S.votes).length} / ${S.players.length} votes cast`;
+  }
+
+  function _botVote() {
+    const bots = S.players.filter(p => p.isBot);
+    const aiSub = S.submissions.find(s => s.isAI);
+
+    // Bot accuracy scales with difficulty: harder = bots are smarter
+    const botAccuracy = { rookie: 0.45, apprentice: 0.55, agent: 0.60, elite: 0.70 };
+    const accuracy = botAccuracy[S.tier] || 0.55;
+
+    bots.forEach((bot, i) => {
+      setTimeout(() => {
+        if (!S.votes[bot.id]) {
+          const pickAI = Math.random() < accuracy;
+          const target = pickAI ? aiSub : S.submissions[~~(Math.random() * S.submissions.length)];
+          S.votes[bot.id] = target.id;
+          _updateVoteTally();
+          Toast.info(`${bot.avatar} ${bot.name} voted`);
+        }
+        if (Object.keys(S.votes).length >= S.players.length)
+          setTimeout(_showResults, 700);
+      }, i * 900 + Math.random() * 1200);
+    });
+  }
+
+  // ─── RESULTS ───
+  async function _showResults() {
+    const aiSub = S.submissions.find(s => s.isAI);
+    const cfg = getTierConfig(S.tier);
+    const myCorrect = S.votes[S.myId] === aiSub.id;
+
+    // Streak tracking
+    let streak = XP.getStreak();
+    if (myCorrect) { streak++; XP.setStreak(streak); }
+    else { streak = 0; XP.setStreak(0); }
+
+    // Multiplier + wildcard
+    const multi = Streak.getMultiplier(streak);
+    const wildcardBonus = (myCorrect && S._wildcardActive) ? 2 : 1;
+    const bonusPts = Math.floor(cfg.scoreBonus * multi * wildcardBonus);
+    S._wildcardActive = false;
+    XP.resetWildcard();
+
+    // Score calculation
+    S.players.forEach(p => {
+      if (S.votes[p.id] === aiSub.id) {
+        const isMe = p.id === S.myId;
+        const bet = isMe ? (S._myBet || 1) : 1;
+        const pts = isMe ? bonusPts * bet : cfg.scoreBonus;
+        S.scores[p.id] = (S.scores[p.id] || 0) + pts;
+      }
+    });
+
+    // Add XP
+    if (myCorrect) XP.add(bonusPts);
+
+    SFX.phaseResults();
+    if (myCorrect) { SFX.aiCaught(); Streak.show(streak); }
+    else           { SFX.aiEscaped(); Streak.hide(); }
+
+    await phaseFlash('🏆', 'DEBRIEF', 'The AI has been unmasked', 'var(--gld)');
+
+    _renderLB(aiSub);
+    _renderAnalysis(aiSub);
+    App.goto('results');
+
+    setTimeout(() => launchConfetti(), 500);
+    // Glitch reveal the AI card
+    setTimeout(() => document.querySelectorAll('.an-card.is-ai').forEach(c => c.classList.add('revealing')), 900);
+    // MVP badges
+    setTimeout(() => _renderMVP(aiSub), 650);
+    // XP bar
+    setTimeout(() => XP.renderBar('xp-bar-container'), 500);
+    // Wildcard for last place
+    setTimeout(() => Wildcard.tryShow(S.players, S.myId, S.scores), 1400);
+    // Share card after a moment
+    setTimeout(() => ShareCard.show(myCorrect, bonusPts, S.tier, streak), 3400);
+
+    // Submit score to DynamoDB global leaderboard
+    const myName = S.players.find(p => p.id === S.myId)?.name || 'Anonymous';
+    GlobalLB.submit(myName, bonusPts, S.tier, myCorrect, streak);
+
+    // Render global leaderboard on results screen
+    setTimeout(() => GlobalLB.render('glb-results-list'), 1500);
+
+    // Voice narration via Polly/Web Speech
+    setTimeout(() => {
+      Voice.say('results');
+      if (myCorrect) setTimeout(() => Voice.say('caught'), 2000);
+      else           setTimeout(() => Voice.say('escaped'), 2000);
+      if (streak >= 2) setTimeout(() => Voice.say('streak'), 3500);
+    }, 1200);
+  }
+
+  function _renderLB(aiSub) {
+    const sorted = [...S.players].sort((a,b) => (S.scores[b.id]||0) - (S.scores[a.id]||0));
+    const lb = document.getElementById('lb-list');
+    lb.innerHTML = '';
+
+    sorted.forEach((p, i) => {
+      const correct = S.votes[p.id] === aiSub.id;
+      const medals = ['🥇','🥈','🥉'];
+      const row = document.createElement('div');
+      row.className = `lb-row r${i+1}`;
+      row.style.animationDelay = `${i * 0.07}s`;
+      row.innerHTML = `
+        <span class="lb-medal">${medals[i] || `#${i+1}`}</span>
+        <span class="lb-av">${p.avatar}</span>
+        <span class="lb-name">${H.esc(p.name)}</span>
+        <span class="lb-pts">${S.scores[p.id]||0}</span>
+        <span class="lb-res">${correct ? '✅' : '❌'}</span>`;
+      lb.appendChild(row);
+    });
+  }
+
+  function _renderAnalysis(aiSub) {
+    const an = document.getElementById('analysis-list');
+    an.innerHTML = '';
+    S.submissions.forEach((sub, idx) => {
+      const authorName = sub.isAI ? '🤖 AI Agent' : (S.players.find(p => p.id === sub.pid)?.name || 'Unknown');
+      const votes = Object.values(S.votes).filter(v => v === sub.id).length;
+      const card = document.createElement('div');
+      card.className = `an-card ${sub.isAI ? 'is-ai' : 'is-human'}`;
+      card.style.animationDelay = `${idx * 0.09}s`;
+      card.innerHTML = `
+        <div class="an-hdr">
+          <span class="an-label ${sub.isAI ? 'ai' : 'human'}">${sub.isAI ? '🤖 AI' : '👤 HUMAN'}</span>
+          <span class="an-author">${H.esc(authorName)}</span>
+          <span class="an-votes">🗳 ${votes} vote${votes!==1?'s':''}</span>
+        </div>
+        <pre class="an-code">${H.esc(sub.code.slice(0, 220))}${sub.code.length > 220 ? '\n…' : ''}</pre>`;
+      an.appendChild(card);
+    });
+  }
+
+  function playAgain() {
+    clearInterval(S.timerInterval);
+    S.submissions = [];
+    S.votes = {};
+    S.myVote = null;
+    S.submitted = false;
+    S.voted = false;
+    S.round++;
+    S.players.forEach(p => { p.score = S.scores[p.id] || 0; });
+    _renderLobby();
+    App.goto('lobby');
+    Toast.info(`Round ${S.round} — get ready!`);
+    SFX.nav();
+  }
+
+  function _renderMVP(aiSub) {
+    const wrap = document.getElementById('mvp-row');
+    if (!wrap) return;
+    const humanSubs = S.submissions.filter(s => !s.isAI);
+    const voteCount = (sid) => Object.values(S.votes).filter(v => v === sid).length;
+    const bestDecoy = [...humanSubs].sort((a,b) => voteCount(b.id)-voteCount(a.id))[0];
+    const deceiver  = bestDecoy ? S.players.find(p => p.id === bestDecoy.pid) : null;
+    const correctVoters = S.players.filter(p => S.votes[p.id] === aiSub.id);
+    const sharpest  = correctVoters[0];
+    const speedDemon = [...humanSubs].sort((a,b) => {
+      return parseInt(a.id.split('_').pop()) - parseInt(b.id.split('_').pop());
+    })[0] ? S.players.find(p => p.id === [...humanSubs].sort((a,b) => parseInt(a.id.split('_').pop())-parseInt(b.id.split('_').pop()))[0]?.pid) : null;
+    const badges = [
+      deceiver   && { icon:'🎭', title:'BEST DECEIVER', name: deceiver.avatar+' '+deceiver.name.slice(0,10) },
+      sharpest   && { icon:'🦅', title:'SHARPEST EYE',  name: sharpest.avatar+' '+sharpest.name.slice(0,10) },
+      speedDemon && { icon:'⚡', title:'SPEED DEMON',   name: speedDemon.avatar+' '+speedDemon.name.slice(0,10) },
+    ].filter(Boolean);
+    wrap.innerHTML = badges.map((b,i) => `
+      <div class="mvp-badge" style="animation-delay:${i*0.1}s">
+        <span class="mvp-icon">${b.icon}</span>
+        <div class="mvp-body">
+          <span class="mvp-title">${b.title}</span>
+          <span class="mvp-name">${H.esc(b.name)}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  function _startHeatmap() {
+    const counts = {};
+    S.submissions.forEach(s => { counts[s.id] = Math.random() * 35; });
+    const iv = setInterval(() => {
+      S.submissions.forEach(s => {
+        counts[s.id] = Math.min(100, counts[s.id] + Math.random() * 9);
+        const el = document.getElementById('heat_' + s.id);
+        if (el) el.style.width = counts[s.id] + '%';
+      });
+    }, 380);
+    setTimeout(() => clearInterval(iv), 35000);
+  }
+
+  return {
+    selectDifficulty,
+    createRoom, joinRoom, copyCode, leave,
+    startGame, onEdit, submit, vote, playAgain,
+    renderLobby: _renderLobby,
+    _setBet, _getBet,
+    get state() { return S; }
+  };
+})();
+
+
+// ═══════════════════════════════════════════════════════════
+//  CodeSPY v5 — NEW FEATURES ENGINE
+//  XP, Streaks, Typing, Chat, Reactions, Share, Wildcard, MVP
+// ═══════════════════════════════════════════════════════════
+
+// ── XP + LEVEL SYSTEM ──────────────────────────────────────
+const XP = (() => {
+  const LEVELS = [
+    {name:'Recruit',   min:0},
+    {name:'Operative', min:200},
+    {name:'Agent',     min:500},
+    {name:'Spy',       min:1000},
+    {name:'Ghost',     min:2000},
+    {name:'Legend',    min:4000},
+  ];
+  function load() {
+    try { return JSON.parse(localStorage.getItem('codespy_xp') || '{"total":0,"streak":0,"wildcard":true}'); }
+    catch(e) { return {total:0,streak:0,wildcard:true}; }
+  }
+  function save(d) { try { localStorage.setItem('codespy_xp',JSON.stringify(d)); } catch(e){} }
+  function getLevel(total) {
+    for (let i=LEVELS.length-1;i>=0;i--)
+      if (total>=LEVELS[i].min) return {...LEVELS[i],idx:i};
+    return {...LEVELS[0],idx:0};
+  }
+  function getNextLevel(total) {
+    const cur=getLevel(total); return LEVELS[cur.idx+1]||null;
+  }
+  function add(pts) { const d=load(); d.total+=pts; save(d); return d; }
+  function getStreak() { return load().streak; }
+  function setStreak(n) { const d=load(); d.streak=n; save(d); }
+  function hasWildcard() { return load().wildcard!==false; }
+  function useWildcard() { const d=load(); d.wildcard=false; save(d); }
+  function resetWildcard() { const d=load(); d.wildcard=true; save(d); }
+  function renderBar(containerId) {
+    const el=document.getElementById(containerId); if(!el) return;
+    const d=load(); const lv=getLevel(d.total); const next=getNextLevel(d.total);
+    const pct=next?Math.min(100,(d.total-lv.min)/(next.min-lv.min)*100):100;
+    el.innerHTML=`<div class="xp-bar-wrap">
+      <div class="xp-row">
+        <span class="xp-level">${lv.name.toUpperCase()}</span>
+        <span class="xp-pts">${d.total} XP${next?' · '+next.min+' to '+next.name:''}</span>
+      </div>
+      <div class="xp-track"><div class="xp-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  return {load,add,getLevel,getStreak,setStreak,hasWildcard,useWildcard,resetWildcard,renderBar};
+})();
+
+// ── STREAK SYSTEM ──────────────────────────────────────────
+const Streak = (() => {
+  function show(streak) {
+    const b=document.getElementById('streak-banner');
+    if(!b||streak<2){if(b)b.innerHTML='';return;}
+    const fires=streak>=4?'🔥🔥🔥':streak>=3?'🔥🔥':'🔥';
+    const multi=streak>=4?'3x':streak>=3?'2x':'1.5x';
+    b.innerHTML=`<div class="streak-pill">${fires} ${streak} CATCH STREAK!</div>
+      <div class="multiplier-chip">${multi} MULTIPLIER ACTIVE</div>`;
+  }
+  function hide() { const b=document.getElementById('streak-banner'); if(b)b.innerHTML=''; }
+  function getMultiplier(streak) {
+    if(streak>=4) return 3; if(streak>=3) return 2; if(streak>=2) return 1.5; return 1;
+  }
+  return {show,hide,getMultiplier};
+})();
+
+// ── TYPING INDICATORS ──────────────────────────────────────
+const TypingUI = (() => {
+  let _interval=null;
+  function start(players) {
+    const wrap=document.getElementById('typing-indicators'); if(!wrap) return;
+    wrap.innerHTML='';
+    players.filter(p=>!p.isBot).forEach(p=>{
+      const el=document.createElement('div');
+      el.className='typing-ind'; el.id='typing_'+p.id;
+      el.innerHTML=`${p.avatar} <span>${H.esc(p.name.slice(0,8))}</span>
+        <span class="typing-dots"><span></span><span></span><span></span></span>`;
+      wrap.appendChild(el);
+    });
+    _interval=setInterval(()=>{
+      players.filter(p=>p.isBot).forEach(p=>{
+        const el=document.getElementById('typing_'+p.id);
+        if(el&&Math.random()<0.4) el.classList.toggle('active');
+      });
+    },1200);
+  }
+  function setActive(pid,active) {
+    const el=document.getElementById('typing_'+pid); if(el) el.classList.toggle('active',active);
+  }
+  function stop() {
+    clearInterval(_interval);
+    const wrap=document.getElementById('typing-indicators'); if(wrap) wrap.innerHTML='';
+  }
+  return {start,setActive,stop};
+})();
+
+// ── ACCUSATION CHAT ────────────────────────────────────────
+const AccChat = (() => {
+  let _timer=null, _secs=30;
+  const BOT_MSGS=[
+    "Submission #2 has perfect type hints — no human writes that under pressure!",
+    "I always add comments when nervous. #3 has zero comments. Sus.",
+    "That Big-O notation in #1 is textbook AI. No one writes that in 3 minutes.",
+    "I saw someone barely move their cursor — they pasted that.",
+    "My code isn't the cleanest but it's mine. Look at the indentation on #4!",
+    "The one with docstrings is obviously the bot. Humans don't document mid-comp.",
+    "I'm not saying it's #2... but it's definitely #2.",
+    "Why does submission #3 handle EXACTLY the right edge case? Not human.",
+    "Real coders make typos. That submission is too clean.",
+    "No human writes triple-quoted docstrings under time pressure. It's #1.",
+  ];
+  function open(players, onDone) {
+    const wrap=document.getElementById('accusation-wrap');
+    const msgs=document.getElementById('acc-msgs');
+    if(!wrap||!msgs){onDone?.();return;}
+    wrap.classList.remove('hidden');
+    msgs.innerHTML=''; _secs=30; _updateTimer();
+    SFX.phaseVoting?.();
+    const bots=H.shuffle([...players.filter(p=>p.isBot)]);
+    bots.forEach((bot,i)=>{
+      const msg=BOT_MSGS[Math.floor(Math.random()*BOT_MSGS.length)];
+      setTimeout(()=>_addMsg(bot.avatar,bot.name,msg), 1500+i*2600+Math.random()*1200);
+    });
+    _timer=setInterval(()=>{
+      _secs--; _updateTimer();
+      if(_secs<=0){close();onDone?.();}
+    },1000);
+  }
+  function _updateTimer() {
+    const el=document.getElementById('acc-timer'); if(!el) return;
+    el.textContent='0:'+_secs.toString().padStart(2,'0');
+    el.style.color=_secs<=10?'var(--red)':'var(--gld)';
+  }
+  function _addMsg(av,name,text) {
+    const msgs=document.getElementById('acc-msgs'); if(!msgs) return;
+    const el=document.createElement('div'); el.className='acc-msg';
+    el.innerHTML=`<span class="acc-av">${av}</span>
+      <div class="acc-body">
+        <div class="acc-name">${H.esc(name)}</div>
+        <div class="acc-text">${H.esc(text)}</div>
+      </div>`;
+    msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight;
+    SFX.toastInfo?.();
+  }
+  function send() {
+    const inp=document.getElementById('acc-inp');
+    if(!inp||!inp.value.trim()) return;
+    const my=GM.state.players.find(p=>p.id===GM.state.myId);
+    _addMsg(my?.avatar||'🥷', my?.name||'You', inp.value.trim());
+    inp.value=''; SFX.click?.();
+  }
+  function close() {
+    clearInterval(_timer);
+    const wrap=document.getElementById('accusation-wrap');
+    if(wrap){wrap.style.animation='slideUp .3s ease reverse';setTimeout(()=>wrap.classList.add('hidden'),280);}
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    const inp=document.getElementById('acc-inp');
+    if(inp) inp.addEventListener('keydown',e=>{if(e.key==='Enter') send();});
+  });
+  return {open,close,send};
+})();
+
+// ── EMOJI REACTIONS ────────────────────────────────────────
+const Reactions = (() => {
+  function float(emoji) {
+    const wrap=document.getElementById('reaction-wrap'); if(!wrap) return;
+    const el=document.createElement('div'); el.className='react-float';
+    el.textContent=emoji; wrap.appendChild(el);
+    setTimeout(()=>el.remove(),2600); SFX.click?.();
+  }
+  return {float};
+})();
+
+// ── SYNTAX HIGHLIGHTER ─────────────────────────────────────
+function syntaxHighlight(raw) {
+  // Escape HTML first
+  let h = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Docstrings (triple quotes)
+  h = h.replace(/("""[\s\S]*?"""|'''[\s\S]*?''')/g,'<span class="dc">$1</span>');
+  // Strings
+  h = h.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,(m)=>{
+    if(m.includes('<span')) return m;
+    return '<span class="st">'+m+'</span>';
+  });
+  // Comments
+  h = h.replace(/(#[^\n]*)/g,'<span class="cm">$1</span>');
+  // Keywords
+  const KW='def|class|return|if|elif|else|for|while|in|not|and|or|import|from|True|False|None|lambda|yield|with|as|try|except|finally|raise|pass|break|continue|assert|del|is';
+  h = h.replace(new RegExp('\\b('+KW+')\\b','g'),'<span class="kw">$1</span>');
+  // Function calls
+  h = h.replace(/\b([a-z_][a-z0-9_]*)\s*(?=\()/g,'<span class="fn">$1</span>');
+  // Numbers
+  h = h.replace(/\b(\d+\.?\d*)\b/g,'<span class="nm">$1</span>');
+  return h;
+}
+
+// ── SHARE CARD ─────────────────────────────────────────────
+const ShareCard = (() => {
+  let _text='';
+  function show(caught, pts, tier, streak) {
+    const wrap=document.getElementById('share-card-wrap');
+    const res=document.getElementById('sc-result');
+    const det=document.getElementById('sc-detail');
+    if(!wrap) return;
+    // If called from button with no args, re-show last card
+    if(caught===undefined){wrap.classList.remove('hidden');return;}
+    const cfg=getTierConfig(tier);
+    const emoji=caught?'🎯 AI CAUGHT!':'🤖 AI ESCAPED...';
+    if(res){res.textContent=emoji;res.style.color=caught?'var(--grn)':'var(--red)';}
+    const streakTxt=streak>=2?'\n🔥 '+streak+' catch streak!':'';
+    const txt=`${emoji}\n${cfg.icon} ${cfg.label} Tier · +${pts} pts${streakTxt}\n🕵️ CodeSPY — AI Among Coders`;
+    if(det) det.textContent=txt;
+    _text=txt+'\nPlay at codespy.app';
+    wrap.classList.remove('hidden');
+  }
+  function copy() {
+    H.copy(_text).then(()=>Toast.success('Result copied! Share it 🚀')); SFX.copy?.();
+  }
+  function close() {
+    const wrap=document.getElementById('share-card-wrap'); if(wrap) wrap.classList.add('hidden');
+  }
+  return {show,copy,close};
+})();
+
+// ── WILDCARD ───────────────────────────────────────────────
+const Wildcard = (() => {
+  function tryShow(players,myId,scores) {
+    const sorted=[...players].sort((a,b)=>(scores[b.id]||0)-(scores[a.id]||0));
+    const myRank=sorted.findIndex(p=>p.id===myId);
+    const isLast=myRank===sorted.length-1&&sorted.length>=3;
+    if(!isLast||!XP.hasWildcard()) return;
+    const btn=document.getElementById('wildcard-btn');
+    if(btn) btn.classList.remove('hidden');
+  }
+  function use() {
+    const btn=document.getElementById('wildcard-btn');
+    if(!btn||btn.classList.contains('used')) return;
+    btn.classList.add('used'); XP.useWildcard();
+    GM.state._wildcardActive=true;
+    Toast.warn('🃏 Wildcard active! Catch the AI for 2x this round!'); SFX.success?.();
+  }
+  return {tryShow,use};
+})();
+
+
+// ═══════════════════════════════════════════════════════════
+//  CodeSPY — AWS CLIENT
+//  Handles all AWS service calls from the frontend.
+//  Replace API_BASE_URL with your actual API Gateway URL
+//  after running setup_aws.py
+// ═══════════════════════════════════════════════════════════
+
+const AWS_CONFIG = {
+  // ⚠️ REPLACE THIS with your actual API Gateway URL after setup
+  // Format: https://xxxxxxxxxx.execute-api.ap-south-1.amazonaws.com/prod
+  API_URL: 'YOUR_API_GATEWAY_URL',
+
+  // Feature flags — set to false to use local fallbacks
+  USE_BEDROCK:     true,   // Real AI code generation
+  USE_LEADERBOARD: true,   // Global DynamoDB leaderboard
+  USE_POLLY:       true,   // Voice narration
+  USE_STATS:       true,   // Live global stats
+
+  // Timeouts
+  AI_TIMEOUT_MS: 8000,   // 8 seconds max for Bedrock
+  LB_TIMEOUT_MS: 4000,   // 4 seconds for leaderboard
+};
+
+// ── FETCH HELPER ───────────────────────────────────────────
+async function awsFetch(endpoint, options = {}, timeoutMs = 5000) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(endpoint, { ...options, signal: controller.signal });
+    clearTimeout(tid);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    clearTimeout(tid);
+    throw e;
+  }
+}
+
+// ── BEDROCK: AI CODE GENERATION ────────────────────────────
+const BedrockAI = (() => {
+  let _loading = false;
+
+  async function generate(challenge, tier) {
+    if (!AWS_CONFIG.USE_BEDROCK || AWS_CONFIG.API_URL === 'YOUR_API_GATEWAY_URL') {
+      // Fallback to local pre-written code
+      return { code: getAICode(challenge.id, tier), source: 'local' };
+    }
+
+    _loading = true;
+    try {
+      const data = await awsFetch(
+        `${AWS_CONFIG.API_URL}/ai-code`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            challengeId:    challenge.id,
+            challengeTitle: challenge.title,
+            challengeDesc:  challenge.desc,
+            task:           challenge.task,
+            exampleInput:   challenge.example_input,
+            exampleOutput:  challenge.example_output,
+            tier:           tier,
+          })
+        },
+        AWS_CONFIG.AI_TIMEOUT_MS
+      );
+      _loading = false;
+      console.log('🤖 Bedrock code generated via', data.model);
+      return { code: data.code, source: 'bedrock', model: data.model };
+    } catch (e) {
+      _loading = false;
+      console.warn('Bedrock fallback to local:', e.message);
+      return { code: getAICode(challenge.id, tier), source: 'local-fallback' };
+    }
+  }
+
+  return { generate, isLoading: () => _loading };
+})();
+
+// ── DYNAMODB: GLOBAL LEADERBOARD ───────────────────────────
+const GlobalLB = (() => {
+  let _cache = null;
+  let _lastFetch = 0;
+
+  async function fetch_top10() {
+    if (!AWS_CONFIG.USE_LEADERBOARD || AWS_CONFIG.API_URL === 'YOUR_API_GATEWAY_URL') {
+      return null;
+    }
+    // Cache for 30 seconds
+    if (_cache && Date.now() - _lastFetch < 30000) return _cache;
+    try {
+      const data = await awsFetch(
+        `${AWS_CONFIG.API_URL}/leaderboard`,
+        {},
+        AWS_CONFIG.LB_TIMEOUT_MS
+      );
+      _cache = data.leaderboard || [];
+      _lastFetch = Date.now();
+      return _cache;
+    } catch (e) {
+      console.warn('Leaderboard fetch failed:', e.message);
+      return null;
+    }
+  }
+
+  async function submit(playerName, score, tier, caughtAI, streak) {
+    if (!AWS_CONFIG.USE_LEADERBOARD || AWS_CONFIG.API_URL === 'YOUR_API_GATEWAY_URL') return;
+    try {
+      await awsFetch(
+        `${AWS_CONFIG.API_URL}/leaderboard`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerName, score, tier, caughtAI, streak })
+        },
+        AWS_CONFIG.LB_TIMEOUT_MS
+      );
+      _cache = null; // Invalidate cache
+      console.log('📊 Score submitted to DynamoDB');
+    } catch (e) {
+      console.warn('Score submit failed:', e.message);
+    }
+  }
+
+  async function render(containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+
+    el.innerHTML = '<div class="glb-loading">Loading global rankings...</div>';
+
+    const data = await fetch_top10();
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div class="glb-empty">No scores yet — be the first!</div>';
+      return;
+    }
+
+    const tierColors = { rookie:'var(--grn)', apprentice:'var(--cyn)', agent:'var(--gld)', elite:'var(--red)' };
+
+    el.innerHTML = data.map((p, i) => `
+      <div class="glb-row" style="animation-delay:${i * 0.06}s">
+        <span class="glb-medal">${p.medal}</span>
+        <span class="glb-name">${H.esc(p.playerName)}</span>
+        <span class="glb-tier" style="color:${tierColors[p.tier]||'var(--txt2)'}">
+          ${getTierConfig(p.tier).icon}
+        </span>
+        <span class="glb-score">${p.score.toLocaleString()}</span>
+        <span class="glb-caught">${p.caughtAI ? '✅' : '❌'}</span>
+        ${p.streak >= 2 ? `<span class="glb-streak">🔥${p.streak}</span>` : ''}
+      </div>`).join('');
+  }
+
+  return { fetch_top10, submit, render };
+})();
+
+// ── DYNAMODB: LIVE GLOBAL STATS ────────────────────────────
+const GlobalStats = (() => {
+  async function fetch_and_render() {
+    if (!AWS_CONFIG.USE_STATS || AWS_CONFIG.API_URL === 'YOUR_API_GATEWAY_URL') {
+      // Show placeholder stats
+      _renderStats({ totalGames: '—', catchRate: '—', totalPlayers: '—' });
+      return;
+    }
+    try {
+      const data = await awsFetch(`${AWS_CONFIG.API_URL}/stats`, {}, 4000);
+      _renderStats(data);
+    } catch (e) {
+      _renderStats({ totalGames: '—', catchRate: '—', totalPlayers: '—' });
+    }
+  }
+
+  function _renderStats(data) {
+    const games   = document.getElementById('stat-games');
+    const rate    = document.getElementById('stat-rate');
+    const players = document.getElementById('stat-players');
+    if (games)   games.textContent   = typeof data.totalGames === 'number' ? data.totalGames.toLocaleString() : data.totalGames;
+    if (rate)    rate.textContent    = typeof data.catchRate === 'number'  ? data.catchRate + '%' : data.catchRate;
+    if (players) players.textContent = typeof data.totalPlayers === 'number' ? data.totalPlayers.toLocaleString() : data.totalPlayers;
+  }
+
+  return { fetch_and_render };
+})();
+
+// ── AMAZON POLLY: VOICE NARRATION ──────────────────────────
+// Pre-synthesized audio using Web Speech API as fallback.
+// When you run setup_aws.py, replace these with actual Polly MP3 URLs from S3.
+const Voice = (() => {
+  let _enabled = true;
+  let _speaking = false;
+
+  // Polly S3 URLs — replace with actual URLs after running setup
+  const POLLY_CLIPS = {
+    lobby:    null, // 'https://your-bucket.s3.ap-south-1.amazonaws.com/polly/lobby.mp3'
+    coding:   null, // 'https://your-bucket.s3.ap-south-1.amazonaws.com/polly/coding.mp3'
+    voting:   null, // 'https://your-bucket.s3.ap-south-1.amazonaws.com/polly/voting.mp3'
+    results:  null, // 'https://your-bucket.s3.ap-south-1.amazonaws.com/polly/results.mp3'
+    caught:   null, // 'https://your-bucket.s3.ap-south-1.amazonaws.com/polly/caught.mp3'
+    escaped:  null, // 'https://your-bucket.s3.ap-south-1.amazonaws.com/polly/escaped.mp3'
+    streak:   null, // 'https://your-bucket.s3.ap-south-1.amazonaws.com/polly/streak.mp3'
+  };
+
+  // Web Speech API scripts (used until Polly URLs are set)
+  const SCRIPTS = {
+    lobby:   'Agents, stand by. Your mission is about to begin.',
+    coding:  'The clock is ticking. Write your solution. One of you... is not human.',
+    voting:  'Coding phase complete. Study the submissions carefully. The AI is hiding among them.',
+    results: 'The AI has been unmasked. Mission complete.',
+    caught:  'Excellent work, Agent. You identified the machine.',
+    escaped: 'The AI escaped detection. Better luck next round.',
+    streak:  'Impressive streak! Your multiplier is growing.',
+  };
+
+  function _playMP3(url) {
+    if (!url) return false;
+    try {
+      const audio = new Audio(url);
+      audio.volume = 0.7;
+      audio.play().catch(() => {});
+      return true;
+    } catch(e) { return false; }
+  }
+
+  function _speak(text) {
+    if (!_enabled || _speaking) return;
+    if (!('speechSynthesis' in window)) return;
+    _speaking = true;
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate   = 0.88;
+    utt.pitch  = 0.85;
+    utt.volume = 0.75;
+    // Try to use a deeper/dramatic voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      v.name.includes('Daniel') ||
+      v.name.includes('Alex')   ||
+      v.name.includes('Google UK English Male') ||
+      v.lang === 'en-GB'
+    );
+    if (preferred) utt.voice = preferred;
+    utt.onend = () => { _speaking = false; };
+    window.speechSynthesis.speak(utt);
+  }
+
+  function say(clipName) {
+    if (!_enabled) return;
+    // Try Polly MP3 first, fall back to Web Speech
+    const url = POLLY_CLIPS[clipName];
+    if (!_playMP3(url)) {
+      _speak(SCRIPTS[clipName] || '');
+    }
+  }
+
+  function toggle() {
+    _enabled = !_enabled;
+    if (!_enabled) window.speechSynthesis?.cancel();
+    return _enabled;
+  }
+
+  function setPollyUrl(clipName, url) {
+    POLLY_CLIPS[clipName] = url;
+  }
+
+  return { say, toggle, isEnabled: () => _enabled, setPollyUrl };
+})();
+
+</script>
+
+<!-- ACCUSATION CHAT -->
+<div id="accusation-wrap" class="hidden">
+  <div class="acc-header">
+    <span class="acc-title">⚡ ACCUSATION PHASE</span>
+    <span class="acc-timer-chip" id="acc-timer">0:30</span>
+  </div>
+  <div class="acc-msgs" id="acc-msgs"></div>
+  <div class="acc-input-row">
+    <input id="acc-inp" class="acc-inp" type="text" placeholder="Defend your code or accuse another..." maxlength="120" autocomplete="off"/>
+    <button class="acc-send" onclick="AccChat.send()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+      SEND
+    </button>
+  </div>
+</div>
+
+<!-- SHARE CARD -->
+<div id="share-card-wrap" class="hidden">
+  <div class="share-card">
+    <div class="share-title">CODESPY</div>
+    <div class="share-sub">MISSION DEBRIEF</div>
+    <div class="share-result" id="sc-result"></div>
+    <div class="share-detail" id="sc-detail"></div>
+    <div class="share-btns">
+      <button class="share-btn sb-copy" onclick="ShareCard.copy()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;height:13px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        COPY RESULT
+      </button>
+      <button class="share-btn sb-close" onclick="ShareCard.close()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- STREAK BANNER -->
+<div id="streak-banner"></div>
+
+<!-- REACTION FLOATS -->
+<div id="reaction-wrap"></div>
+
+<!-- VOICE INDICATOR -->
+<div id="voice-indicator" onclick="const e=Voice.toggle();this.classList.toggle('muted',!e);Toast.info(e?'🔊 Voice on':'🔇 Voice off')">
+  <div class="voice-bars">
+    <div class="voice-bar"></div>
+    <div class="voice-bar"></div>
+    <div class="voice-bar"></div>
+    <div class="voice-bar"></div>
+    <div class="voice-bar"></div>
+  </div>
+  VOICE
+</div>
+</body>
+</html>
