@@ -113,7 +113,7 @@ CodeSPY is **Among Us meets LeetCode**. Every round, all players solve the same 
 
 ## ⚙️ Setup
 
-### Play Instantly (No AWS Needed)
+### Play Instantly 
 The game works fully in local mode — just open `index.html` in any browser. Bots simulate other players, AI uses pre-written solutions.
 
 ### Enable AWS Features
@@ -225,12 +225,6 @@ Examples:
 - Use IAM roles with minimum required permissions in production
 - API Gateway has CORS configured for your domain only in production
 - DynamoDB records have 90-day TTL to keep costs minimal
-
----
-
-## 📝 License
-
-MIT — build on it, fork it, make it yours.
 
 ---
 
